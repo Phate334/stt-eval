@@ -128,4 +128,3 @@ def _validate(model_root: Path) -> None:
         print(json.dumps({"ok": False, "errors": errors}, ensure_ascii=False, indent=2))
         raise SystemExit(1)
     print(json.dumps({"ok": True}, ensure_ascii=False))
-

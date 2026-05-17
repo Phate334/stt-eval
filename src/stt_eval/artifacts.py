@@ -19,9 +19,7 @@ class ModelArtifactMetadata(BaseModel):
     runtime_versions: dict[str, str | None] = Field(default_factory=dict)
     platform_notes: list[str] = Field(default_factory=list)
     model_size_bytes: int = 0
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(tz=UTC).isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.now(tz=UTC).isoformat())
     license_reference: str = f"https://huggingface.co/{MODEL_ID}"
 
 

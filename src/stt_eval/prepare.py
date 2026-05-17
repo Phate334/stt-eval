@@ -3,6 +3,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from huggingface_hub import HfApi
 
@@ -74,7 +75,7 @@ def _resolve_revision(model_id: str) -> str:
     info = HfApi().model_info(model_id)
     if not info.sha:
         raise RuntimeError(f"Could not resolve Hugging Face revision for {model_id}")
-    return info.sha
+    return cast(str, info.sha)
 
 
 def _run(command: list[str], cwd: Path | None = None) -> None:
@@ -162,7 +163,9 @@ def _convert_ct2(
     _write_ct2_metadata(target_dir, quantization, revision, command)
 
 
-def _copy_auxiliary_files(source_dir: Path, target_dir: Path, filenames: list[str]) -> None:
+def _copy_auxiliary_files(
+    source_dir: Path, target_dir: Path, filenames: list[str]
+) -> None:
     for filename in filenames:
         source = source_dir / filename
         target = target_dir / filename

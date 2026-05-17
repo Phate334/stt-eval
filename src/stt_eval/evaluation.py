@@ -133,10 +133,14 @@ def extract_text(response: Any) -> str:
         value = dumped.get("text")
         if isinstance(value, str):
             return value
-    raise ValueError(f"Could not extract text from transcription response: {response!r}")
+    raise ValueError(
+        f"Could not extract text from transcription response: {response!r}"
+    )
 
 
-def summarize_results(rows: Iterable[EvalResultRow]) -> dict[tuple[str, str], dict[str, float]]:
+def summarize_results(
+    rows: Iterable[EvalResultRow],
+) -> dict[tuple[str, str], dict[str, float]]:
     groups: dict[tuple[str, str], list[EvalResultRow]] = {}
     for row in rows:
         groups.setdefault((row.backend, row.quantization), []).append(row)
