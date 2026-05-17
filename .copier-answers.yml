@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 5f0cbe8
+_src_path: https://git.gss.com.tw/cii-internal/python-template.git
+ai_assistant:
+- none
+description: A new Python project
+project_name: stt-eval
+python_version: '3.13'
