@@ -5,22 +5,31 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stt-eval"
 version = "0.1.0"
-description = "A new Python project"
+description = "Breeze-ASR-26 quantization and evaluation"
 
 requires-python = ">=3.13"
 dependencies = [
+    "huggingface-hub>=1.2.3",
+    "openai>=2.8.1",
     "pydantic>=2.12.4",
-    "pydantic-settings>=2.12.0",
 ]
+
+[project.optional-dependencies]
+hf = [
+    "torch>=2.9.0",
+    "transformers>=4.57.0",
+]
+ct2 = [
+    "ctranslate2>=4.6.0",
+]
+
+[project.scripts]
+stt-eval = "stt_eval.cli:main"
 
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",
     "pre-commit>=4.4.0",
-    "pytest>=9.0.1",
-    "pytest-asyncio>=1.3.0",
-    "pytest-cov>=7.0.0",
-    "pytest-mock>=3.15.1",
     "ruff>=0.14.6",
 ]
 
@@ -28,7 +37,7 @@ dev = [
 target-version = "py313"
 
 [tool.ruff.lint.isort]
-known-first-party = [""]
+known-first-party = ["stt_eval"]
 
 [tool.ruff.lint]
 select = [
@@ -66,34 +75,9 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["stt_eval*"]
 
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "--cov= --cov-report=term-missing --cov-report=html"
-testpaths = [
-    "tests",
-]
-asyncio_mode = "auto"
-
-[tool.coverage.run]
-source = ["src"]
-omit = ["tests/*"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
+[tool.setuptools.package-data]
+stt_eval = ["py.typed"]
