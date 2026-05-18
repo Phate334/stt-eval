@@ -39,25 +39,20 @@ def write_metadata(path: Path, metadata: ModelArtifactMetadata) -> None:
 
 def write_readme(path: Path, metadata: ModelArtifactMetadata) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    readme = f"""# {metadata.variant}
+    readme = f"""{_format_model_card_metadata(metadata)}
+# {metadata.variant}
 
-This directory contains a converted or quantized artifact for
-`{metadata.source_model_id}`.
+{_format_model_summary(metadata)}
 
-- Backend: `{metadata.backend}`
-- Quantization: `{metadata.quantization}`
-- Source revision: `{metadata.source_revision}`
-- License/model card: {metadata.license_reference}
+## Source Model
 
-## Conversion
+- Model: [{metadata.source_model_id}]({metadata.license_reference})
+- Revision: `{metadata.source_revision}`
+- License: Apache-2.0, as declared by the source model card
 
-```bash
-{" ".join(metadata.conversion_command)}
-```
+## Quantization
 
-## Notes
-
-{_format_notes(metadata.platform_notes)}
+{_format_quantization_summary(metadata)}
 """
     (path / "README.md").write_text(readme, encoding="utf-8")
 
@@ -94,6 +89,72 @@ def _format_notes(notes: list[str]) -> str:
     if not notes:
         return "- No special platform notes recorded."
     return "\n".join(f"- {note}" for note in notes)
+
+
+def _format_model_summary(metadata: ModelArtifactMetadata) -> str:
+    if metadata.quantization == "f32":
+        return f"This model is an unquantized snapshot of `{metadata.source_model_id}`."
+    return (
+        f"This model is a quantized `{metadata.backend}` version of "
+        f"`{metadata.source_model_id}`. No additional training is documented for this "
+        "artifact."
+    )
+
+
+def _format_quantization_summary(metadata: ModelArtifactMetadata) -> str:
+    if metadata.quantization == "f32":
+        return "- Quantization: none (`f32`)"
+    values = ", ".join(f"`{value}`" for value in metadata.quantization.split(","))
+    return f"- Backend: `{metadata.backend}`\n- Quantization: {values}"
+
+
+def _format_model_card_metadata(metadata: ModelArtifactMetadata) -> str:
+    tags = [
+        "automatic-speech-recognition",
+        "whisper",
+        "taiwanese-hokkien",
+        "taigi",
+        "low-resource-language",
+        _tag_value(metadata.backend),
+    ]
+    if metadata.quantization != "f32":
+        tags.append("quantized")
+        tags.extend(_tag_value(value) for value in metadata.quantization.split(","))
+
+    lines = [
+        "---",
+        "base_model: " + metadata.source_model_id,
+    ]
+    if metadata.quantization != "f32":
+        lines.append("base_model_relation: quantized")
+    lines.extend(
+        [
+            "language:",
+            "- nan",
+            "- zh",
+            f"library_name: {_library_name(metadata.backend)}",
+            "license: apache-2.0",
+            "metrics:",
+            "- cer",
+            "pipeline_tag: automatic-speech-recognition",
+            "tags:",
+        ]
+    )
+    lines.extend(f"- {tag}" for tag in dict.fromkeys(tags))
+    lines.extend(["---", ""])
+    return "\n".join(lines)
+
+
+def _library_name(backend: str) -> str:
+    if backend == "ctranslate2":
+        return "ctranslate2"
+    if backend == "whisper.cpp":
+        return "whisper.cpp"
+    return "transformers"
+
+
+def _tag_value(value: str) -> str:
+    return value.lower().replace(" ", "-").replace(".", "-")
 
 
 def _format_key_values(values: dict[str, str | None]) -> str:

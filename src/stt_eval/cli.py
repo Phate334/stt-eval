@@ -5,7 +5,12 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from stt_eval.artifacts import validate_artifact_dir
-from stt_eval.constants import ALL_VARIANTS, DEFAULT_MODEL_ROOT, DEFAULT_TOOL_ROOT
+from stt_eval.constants import (
+    ALL_ARTIFACT_DIRS,
+    ALL_VARIANTS,
+    DEFAULT_MODEL_ROOT,
+    DEFAULT_TOOL_ROOT,
+)
 from stt_eval.evaluation import EvalOptions, EvalResultRow, run_eval, summarize_results
 from stt_eval.prepare import PrepareOptions, prepare_models
 
@@ -122,8 +127,8 @@ def _summarize(results: Path) -> None:
 
 def _validate(model_root: Path) -> None:
     errors = []
-    for variant in ALL_VARIANTS:
-        errors.extend(validate_artifact_dir(model_root / variant))
+    for artifact_dir in ALL_ARTIFACT_DIRS:
+        errors.extend(validate_artifact_dir(model_root / artifact_dir))
     if errors:
         print(json.dumps({"ok": False, "errors": errors}, ensure_ascii=False, indent=2))
         raise SystemExit(1)

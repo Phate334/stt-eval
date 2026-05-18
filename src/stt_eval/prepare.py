@@ -14,6 +14,7 @@ from stt_eval.artifacts import (
     write_readme,
 )
 from stt_eval.constants import (
+    ARTIFACT_DIR_BY_VARIANT,
     COMMON_HF_COPY_FILES,
     CT2_QUANTIZATION_BY_VARIANT,
     DEFAULT_MODEL_ROOT,
@@ -50,7 +51,12 @@ def prepare_models(options: PrepareOptions) -> None:
     for variant, quantization in CT2_QUANTIZATION_BY_VARIANT.items():
         if variant not in options.variants:
             continue
-        _convert_ct2(hf_dir, options.model_root / variant, quantization, revision)
+        _convert_ct2(
+            hf_dir,
+            options.model_root / ARTIFACT_DIR_BY_VARIANT[variant],
+            quantization,
+            revision,
+        )
 
     whisper_variants = [
         variant
@@ -60,15 +66,26 @@ def prepare_models(options: PrepareOptions) -> None:
     if whisper_variants:
         whispercpp_dir = _ensure_whispercpp(options.tool_root, options.whispercpp_dir)
         f16_model = _convert_whispercpp_base(hf_dir, whispercpp_dir, options.tool_root)
+        target_dir = options.model_root / ARTIFACT_DIR_BY_VARIANT[whisper_variants[0]]
+        commands = []
+        quantizations = []
         for variant in whisper_variants:
-            _quantize_whispercpp(
+            quantization = WHISPERCPP_QUANTIZATION_BY_VARIANT[variant]
+            command = _quantize_whispercpp(
                 whispercpp_dir=whispercpp_dir,
                 source_model=f16_model,
-                target_dir=options.model_root / variant,
-                variant=variant,
-                quantization=WHISPERCPP_QUANTIZATION_BY_VARIANT[variant],
-                revision=revision,
+                target_dir=target_dir,
+                quantization=quantization,
             )
+            commands.append(command)
+            quantizations.append(quantization)
+        _write_whispercpp_metadata(
+            whispercpp_dir=whispercpp_dir,
+            target_dir=target_dir,
+            quantizations=quantizations,
+            revision=revision,
+            commands=commands,
+        )
 
 
 def _resolve_revision(model_id: str) -> str:
@@ -283,10 +300,8 @@ def _quantize_whispercpp(
     whispercpp_dir: Path,
     source_model: Path,
     target_dir: Path,
-    variant: str,
     quantization: str,
-    revision: str,
-) -> None:
+) -> list[str]:
     target_dir.mkdir(parents=True, exist_ok=True)
     output_model = target_dir / f"ggml-model-{quantization}.bin"
     quantize = _find_executable(
@@ -300,13 +315,29 @@ def _quantize_whispercpp(
     command = [str(quantize), str(source_model), str(output_model), quantization]
     if not output_model.exists():
         _run(command)
+    return command
+
+
+def _write_whispercpp_metadata(
+    whispercpp_dir: Path,
+    target_dir: Path,
+    quantizations: list[str],
+    revision: str,
+    commands: list[list[str]],
+) -> None:
+    recorded_quantizations = [
+        quantization
+        for quantization in WHISPERCPP_QUANTIZATION_BY_VARIANT.values()
+        if quantization in quantizations
+        or (target_dir / f"ggml-model-{quantization}.bin").exists()
+    ]
     metadata = ModelArtifactMetadata(
-        variant=variant,
+        variant=target_dir.name,
         backend="whisper.cpp",
-        quantization=quantization,
+        quantization=",".join(recorded_quantizations),
         source_revision=revision,
         artifact_path=str(target_dir),
-        conversion_command=command,
+        conversion_command=[" && ".join(" ".join(command) for command in commands)],
         runtime_versions={
             **collect_runtime_metadata(),
             "whispercpp_git_revision": command_output(
@@ -314,7 +345,8 @@ def _quantize_whispercpp(
             ),
         },
         platform_notes=[
-            "Converted to GGML for whisper.cpp quantized artifact evaluation."
+            "Converted to GGML for whisper.cpp quantized artifact evaluation.",
+            "GGML convention keeps multiple quantized files for the same model in one repository.",
         ],
     )
     write_metadata(target_dir, metadata)
