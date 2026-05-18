@@ -143,6 +143,7 @@ def _convert_ct2(
     quantization: str,
     revision: str,
 ) -> None:
+    _ensure_tokenizer_json(hf_dir)
     copy_files = [name for name in COMMON_HF_COPY_FILES if (hf_dir / name).exists()]
     command = [
         "ct2-transformers-converter",
@@ -171,6 +172,23 @@ def _copy_auxiliary_files(
         target = target_dir / filename
         if source.exists() and not target.exists():
             shutil.copy2(source, target)
+
+
+def _ensure_tokenizer_json(hf_dir: Path) -> None:
+    tokenizer_json = hf_dir / "tokenizer.json"
+    if tokenizer_json.exists():
+        return
+    try:
+        from transformers import AutoTokenizer
+    except ImportError as exc:
+        raise RuntimeError(
+            "Generating tokenizer.json requires the hf extra. "
+            "Run model preparation through uv with both extras, for example: "
+            "uv run --extra hf --extra ct2 stt-eval prepare-models"
+        ) from exc
+
+    tokenizer = AutoTokenizer.from_pretrained(hf_dir)
+    tokenizer.save_pretrained(hf_dir)
 
 
 def _write_ct2_metadata(
