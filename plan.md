@@ -13,13 +13,12 @@ Evaluate the CER impact of CT2 and GGML quantization for
   - `artifacts/models/Breeze-ASR-26-int8_float16-CT2/`
   - `artifacts/models/Breeze-ASR-26-int8-CT2/`
 - GGML artifacts:
-  - `artifacts/models/Breeze-ASR-26-q8_0-GGML/`
-  - `artifacts/models/Breeze-ASR-26-q5_0-GGML/`
-  - `artifacts/models/Breeze-ASR-26-q4_0-GGML/`
-  - `artifacts/models/Breeze-ASR-26-q4_1-GGML/`
+  - `artifacts/models/Breeze-ASR-26-GGML/`
 
 Each generated artifact directory contains model files plus `metadata.json`,
-`README.md`, and `QUANTIZATION.md`.
+`README.md`, and `QUANTIZATION.md`. The GGML artifact directory keeps all
+quantized files for the same model in one repository-style directory, for
+example `ggml-model-q8_0.bin` and `ggml-model-q4_0.bin`.
 
 ## Model Preparation
 
