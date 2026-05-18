@@ -1,0 +1,70 @@
+services:
+  download:
+    image: ubuntu:24.04
+    restart: "no"
+    environment:
+      HF_MODEL_REPO: "${HF_MODEL_REPO:-phate334/Breeze-ASR-26-GGML}"
+      MODEL_FILE: "${MODEL_FILE:-ggml-model-q4_0.bin}"
+      HF_TOKEN: "${HF_TOKEN:-}"
+    volumes:
+      - whisper-cpp-ggml-models:/models
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command: |
+      set -eu
+      apt-get update
+      apt-get install -y --no-install-recommends ca-certificates curl
+      rm -rf /var/lib/apt/lists/*
+
+      url="https://huggingface.co/$${HF_MODEL_REPO}/resolve/main/$${MODEL_FILE}"
+      if [ -n "$${HF_TOKEN}" ]; then
+        curl --fail --location --retry 3 \
+          --header "Authorization: Bearer $${HF_TOKEN}" \
+          --output "/models/$${MODEL_FILE}" \
+          "$${url}"
+      else
+        curl --fail --location --retry 3 \
+          --output "/models/$${MODEL_FILE}" \
+          "$${url}"
+      fi
+
+  whisper-cpp:
+    image: ghcr.io/ggml-org/whisper.cpp:main-cuda-47b9eb37a33c5031a1b667ace64477330b9f36c1
+    restart: unless-stopped
+    depends_on:
+      download:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      MODEL_FILE: "${MODEL_FILE:-ggml-model-q4_0.bin}"
+      THREADS: "${THREADS:-4}"
+      PROCESSORS: "${PROCESSORS:-1}"
+      LANGUAGE: "${LANGUAGE:-auto}"
+    volumes:
+      - whisper-cpp-ggml-models:/models:ro
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command: |
+      exec whisper-server \
+        --host 0.0.0.0 \
+        --port 8080 \
+        --model "/models/$${MODEL_FILE}" \
+        --threads "$${THREADS}" \
+        --processors "$${PROCESSORS}" \
+        --language "$${LANGUAGE}" \
+        --convert \
+        --request-path /v1/audio/transcriptions \
+        --inference-path ""
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  whisper-cpp-ggml-models:
