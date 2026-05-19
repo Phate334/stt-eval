@@ -2,8 +2,8 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
-from typing import cast
 
 from huggingface_hub import HfApi
 
@@ -92,7 +92,7 @@ def _resolve_revision(model_id: str) -> str:
     info = HfApi().model_info(model_id)
     if not info.sha:
         raise RuntimeError(f"Could not resolve Hugging Face revision for {model_id}")
-    return cast(str, info.sha)
+    return str(info.sha)
 
 
 def _run(command: list[str], cwd: Path | None = None) -> None:
@@ -196,7 +196,7 @@ def _ensure_tokenizer_json(hf_dir: Path) -> None:
     if tokenizer_json.exists():
         return
     try:
-        from transformers import AutoTokenizer
+        transformers = import_module("transformers")
     except ImportError as exc:
         raise RuntimeError(
             "Generating tokenizer.json requires the hf extra. "
@@ -204,7 +204,7 @@ def _ensure_tokenizer_json(hf_dir: Path) -> None:
             "uv run --extra hf --extra ct2 stt-eval prepare-models"
         ) from exc
 
-    tokenizer = AutoTokenizer.from_pretrained(hf_dir)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(hf_dir)
     tokenizer.save_pretrained(hf_dir)
 
 

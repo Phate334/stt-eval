@@ -2,7 +2,7 @@ import json
 from collections.abc import Iterator
 from pathlib import Path
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class ManifestItem(BaseModel):
@@ -33,5 +33,5 @@ def iter_manifest(path: Path) -> Iterator[ManifestItem]:
                     payload["audio_path"] = str(base_dir / audio_path)
             try:
                 yield ManifestItem.model_validate(payload)
-            except Exception as exc:
+            except ValidationError as exc:
                 raise ValueError(f"Invalid manifest row {line_number}: {exc}") from exc

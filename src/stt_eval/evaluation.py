@@ -1,8 +1,6 @@
 import json
-import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
 
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -10,21 +8,26 @@ from pydantic import BaseModel, Field
 from stt_eval.cer import calculate_cer
 from stt_eval.manifest import ManifestItem, iter_manifest
 from stt_eval.normalization import normalize_for_cer
+from stt_eval.openai_transcription import transcribe_file
 from stt_eval.runtime import collect_runtime_metadata
+from stt_eval.settings import get_openai_settings
 
 
 class EvalOptions(BaseModel):
     manifest: Path
     output: Path
-    base_url: str
-    model: str
+    base_url: str = Field(default_factory=lambda: get_openai_settings().base_url)
+    model: str = Field(default_factory=lambda: get_openai_settings().model)
     backend: str
     quantization: str
     model_artifact_dir: Path | None = None
     language: str | None = None
     prompt: str | None = None
     temperature: float = 0.0
-    api_key: str = "local"
+    timeout_sec: float = Field(
+        default_factory=lambda: get_openai_settings().timeout_sec
+    )
+    api_key: str = Field(default_factory=lambda: get_openai_settings().api_key_value())
 
 
 class EvalResultRow(BaseModel):
@@ -45,8 +48,8 @@ class EvalResultRow(BaseModel):
     wall_time_sec: float
     audio_duration_sec: float | None
     rtf: float | None
-    request: dict[str, Any]
-    runtime: dict[str, Any] = Field(default_factory=dict)
+    request: dict[str, str | float]
+    runtime: dict[str, str | None] = Field(default_factory=dict)
 
 
 def run_eval(options: EvalOptions) -> None:
@@ -63,20 +66,21 @@ def transcribe_and_score(
     item: ManifestItem,
     options: EvalOptions,
 ) -> EvalResultRow:
-    started = time.perf_counter()
-    request = _request_payload(options)
-    with item.audio_path.open("rb") as audio_file:
-        response = client.audio.transcriptions.create(
-            file=audio_file,
-            **request,
-        )
-    wall_time = time.perf_counter() - started
-    raw_hypothesis = extract_text(response)
+    transcription = transcribe_file(
+        client=client,
+        model=options.model,
+        audio_path=item.audio_path,
+        timeout_sec=options.timeout_sec,
+        temperature=options.temperature,
+        language=options.language,
+        prompt=options.prompt,
+    )
+    raw_hypothesis = transcription.text
     normalized_reference = normalize_for_cer(item.reference)
     normalized_hypothesis = normalize_for_cer(raw_hypothesis)
     cer = calculate_cer(normalized_reference, normalized_hypothesis)
     rtf = (
-        wall_time / item.duration_sec
+        transcription.elapsed_sec / item.duration_sec
         if item.duration_sec and item.duration_sec > 0
         else None
     )
@@ -97,45 +101,25 @@ def transcribe_and_score(
         cer_reference_length=cer.reference_length,
         cer_errors=cer.errors,
         cer=cer.ratio,
-        wall_time_sec=wall_time,
+        wall_time_sec=transcription.elapsed_sec,
         audio_duration_sec=item.duration_sec,
         rtf=rtf,
-        request={key: value for key, value in request.items() if key != "file"},
+        request=_request_record(options),
         runtime=collect_runtime_metadata(),
     )
 
 
-def _request_payload(options: EvalOptions) -> dict[str, Any]:
-    payload: dict[str, Any] = {
+def _request_record(options: EvalOptions) -> dict[str, str | float]:
+    request: dict[str, str | float] = {
         "model": options.model,
         "response_format": "json",
         "temperature": options.temperature,
     }
     if options.language:
-        payload["language"] = options.language
+        request["language"] = options.language
     if options.prompt:
-        payload["prompt"] = options.prompt
-    return payload
-
-
-def extract_text(response: Any) -> str:
-    if isinstance(response, str):
-        return response
-    if isinstance(response, dict):
-        value = response.get("text")
-        if isinstance(value, str):
-            return value
-    value = getattr(response, "text", None)
-    if isinstance(value, str):
-        return value
-    if hasattr(response, "model_dump"):
-        dumped = response.model_dump()
-        value = dumped.get("text")
-        if isinstance(value, str):
-            return value
-    raise ValueError(
-        f"Could not extract text from transcription response: {response!r}"
-    )
+        request["prompt"] = options.prompt
+    return request
 
 
 def summarize_results(

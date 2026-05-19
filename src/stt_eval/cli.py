@@ -12,17 +12,23 @@ from stt_eval.constants import (
     DEFAULT_TOOL_ROOT,
 )
 from stt_eval.evaluation import EvalOptions, EvalResultRow, run_eval, summarize_results
+from stt_eval.openai_transcription import (
+    TranscriptionOptions,
+    payload_to_json,
+    transcribe_files,
+)
 from stt_eval.prepare import PrepareOptions, prepare_models
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="stt-eval")
     subparsers = parser.add_subparsers(dest="command", required=True)
     _add_prepare_parser(subparsers)
     _add_run_eval_parser(subparsers)
+    _add_transcribe_openai_parser(subparsers)
     _add_summarize_parser(subparsers)
     _add_validate_parser(subparsers)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.command == "prepare-models":
         prepare_models(
@@ -38,6 +44,9 @@ def main() -> None:
         return
     if args.command == "run-eval":
         _run_eval(args)
+        return
+    if args.command == "transcribe-openai":
+        _transcribe_openai(args)
         return
     if args.command == "summarize":
         _summarize(args.results)
@@ -68,15 +77,27 @@ def _add_run_eval_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("run-eval")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--base-url", required=True)
-    parser.add_argument("--model", required=True)
+    parser.add_argument("--base-url")
+    parser.add_argument("--model")
     parser.add_argument("--backend", required=True)
     parser.add_argument("--quantization", required=True)
     parser.add_argument("--model-artifact-dir", type=Path)
     parser.add_argument("--language")
     parser.add_argument("--prompt")
     parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--api-key", default="local")
+    parser.add_argument("--timeout-sec", type=float)
+    parser.add_argument("--api-key")
+
+
+def _add_transcribe_openai_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("transcribe-openai")
+    parser.add_argument("--base-url")
+    parser.add_argument("--api-key")
+    parser.add_argument("--model")
+    parser.add_argument("--backend")
+    parser.add_argument("--timeout-sec", type=float)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("audio_paths", nargs="+", type=Path)
 
 
 def _add_summarize_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -90,23 +111,44 @@ def _add_validate_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def _run_eval(args: argparse.Namespace) -> None:
+    values = {
+        "manifest": args.manifest,
+        "output": args.output,
+        "backend": args.backend,
+        "quantization": args.quantization,
+        "model_artifact_dir": args.model_artifact_dir,
+        "language": args.language,
+        "prompt": args.prompt,
+        "temperature": args.temperature,
+    }
+    values.update(_present_args(args, "base_url", "model", "api_key", "timeout_sec"))
     try:
-        options = EvalOptions(
-            manifest=args.manifest,
-            output=args.output,
-            base_url=args.base_url,
-            model=args.model,
-            backend=args.backend,
-            quantization=args.quantization,
-            model_artifact_dir=args.model_artifact_dir,
-            language=args.language,
-            prompt=args.prompt,
-            temperature=args.temperature,
-            api_key=args.api_key,
-        )
+        options = EvalOptions(**values)
     except ValidationError as exc:
         raise SystemExit(str(exc)) from exc
     run_eval(options)
+
+
+def _transcribe_openai(args: argparse.Namespace) -> None:
+    values = {"audio_paths": tuple(args.audio_paths), "output": args.output}
+    values.update(
+        _present_args(args, "base_url", "model", "api_key", "backend", "timeout_sec")
+    )
+    try:
+        options = TranscriptionOptions(**values)
+    except ValidationError as exc:
+        raise SystemExit(str(exc)) from exc
+    payload = transcribe_files(options)
+    print(payload_to_json(payload))
+
+
+def _present_args(args: argparse.Namespace, *keys: str) -> dict[str, object]:
+    values = {}
+    for key in keys:
+        value = getattr(args, key)
+        if value is not None:
+            values[key] = value
+    return values
 
 
 def _summarize(results: Path) -> None:
