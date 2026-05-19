@@ -2,10 +2,9 @@
 
 `stt-eval` 是用來評估 `MediaTek-Research/Breeze-ASR-26` 量化版本的工具。
 
-目前保留兩類功能：
+目前保留的功能：
 
 - 模型準備與量化：下載 HF 原始模型，轉成 CT2 與 GGML 量化 artifacts。
-- 評估與彙總：呼叫 OpenAI-compatible STT API，計算 CER / RTF，輸出與彙總 JSONL 結果。
 
 ## 安裝
 
@@ -45,38 +44,6 @@ Artifacts 會放在 `artifacts/models/`，命名格式如下：
 
 - `Breeze-ASR-26-int8-CT2`
 - `Breeze-ASR-26-q8_0-GGML`
-
-## 評估
-
-準備 manifest JSONL：
-
-```jsonl
-{"id":"sample-001","audio_path":"audio/sample.wav","reference":"參考逐字稿","duration_sec":3.2}
-```
-
-執行評估：
-
-```bash
-uv run stt-eval run-eval \
-  --manifest data/manifest.jsonl \
-  --output artifacts/results/Breeze-ASR-26-int8-CT2.jsonl \
-  --base-url http://127.0.0.1:8000/v1 \
-  --model Breeze-ASR-26-int8-CT2 \
-  --backend ct2 \
-  --quantization int8 \
-  --model-artifact-dir artifacts/models/Breeze-ASR-26-int8-CT2
-```
-
-`base-url` 需指向相容 OpenAI audio transcriptions API 的服務。
-
-## 彙總結果
-
-```bash
-uv run stt-eval summarize \
-  --results artifacts/results/Breeze-ASR-26-int8-CT2.jsonl
-```
-
-會輸出 sample 數、平均 CER、平均 RTF。
 
 ## 檢查 artifacts
 
