@@ -1,2 +1,17 @@
-# Exclude the project virtual environment from image builds
+# Local Python environment and caches
 .venv
+__pycache__/
+*.py[codz]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Git metadata and local secrets
+.git/
+.env
+.envrc
+
+# Generated artifacts and local datasets
+artifacts/
+data/
