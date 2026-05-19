@@ -1,27 +1,16 @@
 services:
   speaches:
     image: ghcr.io/speaches-ai/speaches:0.8.3-cuda
-    restart: unless-stopped
     ports:
       - "8080:8000"
     environment:
       MODEL_NAME: "${MODEL_NAME:-whisper-1}"
       MODEL_ID: "${MODEL_ID:-phate334/Breeze-ASR-26-int8-CT2}"
-      HF_HOME: "/home/ubuntu/.cache/huggingface"
       HF_TOKEN: "${HF_TOKEN:-}"
       UVICORN_HOST: "0.0.0.0"
       UVICORN_PORT: "8000"
     volumes:
       - speaches-cache:/home/ubuntu/.cache
-    entrypoint:
-      - /bin/sh
-      - -lc
-    command:
-      - |
-        set -eu
-        mkdir -p /home/ubuntu/speaches
-        printf '{\n  "%s": "%s"\n}\n' "$${MODEL_NAME}" "$${MODEL_ID}" > /home/ubuntu/speaches/model_aliases.json
-        exec uvicorn --factory speaches.main:create_app
     devices:
       - "nvidia.com/gpu=all"
 

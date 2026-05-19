@@ -45,9 +45,6 @@ services:
       LANGUAGE: "${LANGUAGE:-auto}"
     volumes:
       - whisper-cpp-ggml-models:/models:ro
-    entrypoint:
-      - /bin/sh
-      - -lc
     command:
       - |
         set -eu
