@@ -1,5 +1,5 @@
-# stt 模型評估
+# Rules for Agents
 
-- huggingface cli 已經有登入一個 ready only 的 token
-- 能用 bash 完成的動作盡量用 bash 完成
+- 盡量用 bash 提供的工具完成任務
 - 複雜流程或是第三方相依套件需要使用 Python ，必須使用 uv 在專案目錄 .venv 管理的虛擬環境安裝和執行
+- 文件使用台灣工程師習慣用語的正體中文撰寫
