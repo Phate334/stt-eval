@@ -11,23 +11,24 @@ services:
     entrypoint:
       - /bin/sh
       - -lc
-    command: |
-      set -eu
-      apt-get update
-      apt-get install -y --no-install-recommends ca-certificates curl
-      rm -rf /var/lib/apt/lists/*
+    command:
+      - |
+        set -eu
+        apt-get update
+        apt-get install -y --no-install-recommends ca-certificates curl
+        rm -rf /var/lib/apt/lists/*
 
-      url="https://huggingface.co/$${HF_MODEL_REPO}/resolve/main/$${MODEL_FILE}"
-      if [ -n "$${HF_TOKEN}" ]; then
-        curl --fail --location --retry 3 \
-          --header "Authorization: Bearer $${HF_TOKEN}" \
-          --output "/models/$${MODEL_FILE}" \
-          "$${url}"
-      else
-        curl --fail --location --retry 3 \
-          --output "/models/$${MODEL_FILE}" \
-          "$${url}"
-      fi
+        url="https://huggingface.co/$${HF_MODEL_REPO}/resolve/main/$${MODEL_FILE}"
+        if [ -n "$${HF_TOKEN}" ]; then
+          curl --fail --location --retry 3 \
+            --header "Authorization: Bearer $${HF_TOKEN}" \
+            --output "/models/$${MODEL_FILE}" \
+            "$${url}"
+        else
+          curl --fail --location --retry 3 \
+            --output "/models/$${MODEL_FILE}" \
+            "$${url}"
+        fi
 
   whisper-cpp:
     image: ghcr.io/ggml-org/whisper.cpp:main-cuda-47b9eb37a33c5031a1b667ace64477330b9f36c1
@@ -47,17 +48,19 @@ services:
     entrypoint:
       - /bin/sh
       - -lc
-    command: |
-      exec whisper-server \
-        --host 0.0.0.0 \
-        --port 8080 \
-        --model "/models/$${MODEL_FILE}" \
-        --threads "$${THREADS}" \
-        --processors "$${PROCESSORS}" \
-        --language "$${LANGUAGE}" \
-        --convert \
-        --request-path /v1/audio/transcriptions \
-        --inference-path ""
+    command:
+      - |
+        set -eu
+        exec whisper-server \
+          --host 0.0.0.0 \
+          --port 8080 \
+          --model "/models/$${MODEL_FILE}" \
+          --threads "$${THREADS}" \
+          --processors "$${PROCESSORS}" \
+          --language "$${LANGUAGE}" \
+          --convert \
+          --request-path /v1/audio/transcriptions \
+          --inference-path ""
     deploy:
       resources:
         reservations:

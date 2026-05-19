@@ -16,13 +16,12 @@ services:
     entrypoint:
       - /bin/sh
       - -lc
-    command: |
-      cat > /home/ubuntu/speaches/model_aliases.json <<EOF
-      {
-        "$${MODEL_NAME}": "$${MODEL_ID}"
-      }
-      EOF
-      exec uvicorn --factory speaches.main:create_app
+    command:
+      - |
+        set -eu
+        mkdir -p /home/ubuntu/speaches
+        printf '{\n  "%s": "%s"\n}\n' "$${MODEL_NAME}" "$${MODEL_ID}" > /home/ubuntu/speaches/model_aliases.json
+        exec uvicorn --factory speaches.main:create_app
     deploy:
       resources:
         reservations:

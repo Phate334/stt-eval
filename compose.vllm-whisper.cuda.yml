@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MODEL_ID: "${MODEL_ID:-MediaTek-Research/Breeze-ASR-26}"
+      MODEL_ID: "${MODEL_ID:-openai/whisper-large-v3}"
       SERVED_MODEL_NAME: "${SERVED_MODEL_NAME:-whisper-1}"
       DTYPE: "${DTYPE:-float16}"
       HF_HOME: "/root/.cache/huggingface"
@@ -17,13 +17,14 @@ services:
     entrypoint:
       - /bin/sh
       - -lc
-    command: |
-      exec vllm serve "$${MODEL_ID}" \
-        --task transcription \
-        --served-model-name "$${SERVED_MODEL_NAME}" \
-        --host 0.0.0.0 \
-        --port 8080 \
-        --dtype "$${DTYPE}"
+    command:
+      - |
+        set -eu
+        exec vllm serve "$${MODEL_ID}" \
+          --served-model-name "$${SERVED_MODEL_NAME}" \
+          --host 0.0.0.0 \
+          --port 8080 \
+          --dtype "$${DTYPE}"
     deploy:
       resources:
         reservations:
