@@ -23,11 +23,28 @@
 - 同一批比較必須使用完全相同的音檔、排序、解碼參數與 normalization 規則。
 - 即使資料集沒有逐字轉錄，也可以納入量化偏移評估；只是結果不能解讀為對人工 reference 的 ASR 正確率。
 
-## 主資料集：Common Voice `nan-tw`
+## Pseudo-reference 與文字處理
 
-目前主 benchmark 暫用 Mozilla Common Voice Scripted Speech 25.0 的台語資料；`nan-tw` 的文字品質與模型預期有落差，但本任務只比較原始模型與量化模型輸出，所以文字欄位不再是主要問題。
+傳統 ASR CER 會使用資料集提供的人工 reference；本專案目前改採原始模型輸出作為 pseudo-reference。資料集文字只保留為抽查與除錯輔助，不參與主分數。
+
+### 與傳統 ASR benchmark 的差異
+
+Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；部分資料集 reference 可能是台語漢字、台羅或華語對譯。由於主指標不使用資料集文字，因此：
+
+- 主分數代表量化模型相對原始模型輸出的漂移程度，不代表人工 reference CER。
+- 不可直接對比 Breeze-ASR-26 官方 30.13% CER。
+- 若要另外報告資料集 reference CER，必須獨立標示為輔助分析，不能與 pseudo-reference 指標混用。
+
+## 其他候選資料集
+
+本節記錄 2026-05-23 重新調查的候選資料來源。
+
+### Common Voice `nan-tw`
+
+狀態：候選資料集。因文字品質與授權 / re-host 限制，目前不作為主資料集。
 
 - 來源：https://mozilladatacollective.com/datasets/cmn2cyd8901jemm0738nubysq
+- Dataset ID：`cmn2cyd8901jemm0738nubysq`
 - Locale：`nan-tw`
 - 語言：Taiwanese（Minnan），也就是台語 / 台灣閩南語。
 - Release：`cv-corpus-25.0-2026-03-09`
@@ -47,9 +64,13 @@
 - Dev：5,999 clips。
 - Test：6,423 clips。
 
-本次預設使用官方 `test` split。若後續改用其他資料集，`nan-tw` 結果仍可保留為量化偏移參考。
+限制與建議：
 
-### 下載與本機路徑紀錄
+- `nan-tw` 文本以台語漢字為主，括號內常附台羅或白話字參考發音，例如 `皇帝菜（hông-tè-tshài）`；文字品質與 Breeze-ASR-26 預期輸出有落差。
+- 本任務主分數不使用資料集文字，因此文字問題不是計分阻礙，但仍會增加人工檢查與除錯成本。
+- Common Voice 頁面明確禁止 re-host / re-share dataset；本專案不可上傳音檔、原始 archive、完整 TSV 或轉換後資料副本。
+- 若使用，只能保留準備流程、normalization code、checksum、抽樣清單與操作說明，不提供資料 mirror。
+- 可作為備用量化偏移評估集；不建議作為第一優先資料集。
 
 下載日期：2026-05-19（Asia/Taipei）。
 
@@ -66,10 +87,6 @@ curl -sS -X POST \
   https://mozilladatacollective.com/api/datasets/cmn2cyd8901jemm0738nubysq/download
 ```
 
-下載與資料路徑：
-
-- Dataset ID：`cmn2cyd8901jemm0738nubysq`
-
 本機解壓：
 
 ```bash
@@ -78,44 +95,9 @@ tar -xzf \
   -C data/raw/common_voice_nan_tw_25_0
 ```
 
-
-### 使用限制
-
-Common Voice 頁面明確禁止 re-host / re-share dataset。因此本專案：
-
-- 不上傳音檔。
-- 不上傳原始 archive。
-- 不上傳完整 TSV。
-- 不上傳轉換後的 dataset 副本到 Hugging Face 或其他公開 host。
-- 只公開準備流程、normalization code、checksum、操作說明。
-- 不嘗試識別 speaker。
-
-## Pseudo-reference 與文字處理
-
-傳統 ASR CER 會使用資料集提供的人工 reference；本專案目前改採原始模型輸出作為 pseudo-reference。資料集文字只保留為抽查與除錯輔助，不參與主分數。
-
-Common Voice `nan-tw` 文本以台語漢字為主，括號內常附台羅或白話字參考發音，例如：
-
-```text
-皇帝菜（hông-tè-tshài）
-```
-
-
-### 與傳統 ASR benchmark 的差異
-
-Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；部分資料集 reference 可能是台語漢字、台羅或華語對譯。由於主指標不使用資料集文字，因此：
-
-- 主分數代表量化模型相對原始模型輸出的漂移程度，不代表人工 reference CER。
-- 不可直接對比 Breeze-ASR-26 官方 30.13% CER。
-- 若要另外報告資料集 reference CER，必須獨立標示為輔助分析，不能與 pseudo-reference 指標混用。
-
-## 其他候選資料集
-
-本節記錄 2026-05-23 重新調查的候選資料來源。
-
 ### `sarahwei/Taiwanese-Minnan-Example-Sentences`
 
-狀態：高優先候選，可作為 `nan-tw` 以外的量化偏移評估集。
+狀態：高優先候選，可作為主要量化偏移評估集。
 
 - HF：https://huggingface.co/datasets/sarahwei/Taiwanese-Minnan-Example-Sentences
 - 來源：教育部臺灣閩南語常用詞辭典 / Sutian Resource Center，dataset card 標示文字來源 `kautian.ods`、音檔來源 `leku-wav.zip`。
@@ -191,17 +173,17 @@ Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；部分資料集 re
 
 ## 目前結論
 
-- `nan-tw`：保留現有流程，作為可重現的相對偏移 baseline；不再清理或強調資料集文字。
 - `sarahwei/Taiwanese-Minnan-Example-Sentences`：最值得下一步試跑。雖然授權為 NC-SA 且只有 train split，但例句音檔長度與數量適合作為主要偏移評估集合。
-- `sarahwei/Taiwanese-Minnan-Sutiau`：可作短詞條壓力測試，觀察量化後短音檔空輸出或錯字率，不適合主 benchmark。
 - `TaigiSpeech/TaigiSpeech`：缺 transcript 已不是阻礙；可納入輸出偏移評估。若要看任務效果，再另開 intent/SLU 評估。
+- `nan-tw`：因文字品質與 re-host / re-share 授權限制，降為候選資料集；可保留現有準備流程，但不作為第一優先。
+- `sarahwei/Taiwanese-Minnan-Sutiau`：可作短詞條壓力測試，觀察量化後短音檔空輸出或錯字率，不適合主 benchmark。
 
 下一步建議：
 
 - 先固定 `Example-Sentences` 的 dataset revision 與抽樣規則，建立 `example_sentences_eval` audio subset，不處理文字欄位。
 - 同一批音檔跑原始模型、CT2 與 GGML 量化模型，以原始模型輸出作 pseudo-reference，報告每個格式的 character edit distance / CER-like drift。
-- 另外抽少量 `Sutiau` 做短語 smoke test，檢查極短音訊下量化模型是否更容易空輸出或 hallucination。
 - 可加跑 `TaigiSpeech` test split，補一組真實語音命令場景的輸出偏移結果。
+- 另外抽少量 `Sutiau` 做短語 smoke test，檢查極短音訊下量化模型是否更容易空輸出或 hallucination。
 
 ## 暫不採用資料集
 
