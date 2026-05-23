@@ -6,6 +6,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+import pyarrow.parquet as pq
 from huggingface_hub import snapshot_download
 
 from stt_eval.config import SttEvalSettings
@@ -83,15 +84,111 @@ def prepare_huggingface_samples(
     options: DatasetSampleOptions,
     settings: SttEvalSettings,
 ) -> None:
+    raw_root = options.raw_root or settings.raw_root
+    sample_root = options.sample_root or settings.sample_root
+    raw_dataset_dir = raw_root / dataset.raw_dir_name
+    sample_dir = sample_root / dataset.name
+    sample_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = sample_dir / f"first_{options.count}_transcripts.tsv"
+
+    parquet_files = sorted(
+        (raw_dataset_dir / "data").glob(f"{dataset.split}-*.parquet")
+    )
+    if parquet_files:
+        written_rows = _prepare_samples_from_parquet(
+            dataset=dataset,
+            parquet_files=parquet_files,
+            sample_dir=sample_dir,
+            manifest_path=manifest_path,
+            count=options.count,
+            force=options.force,
+        )
+    else:
+        written_rows = _prepare_samples_from_hf_dataset(
+            dataset=dataset,
+            options=options,
+            settings=settings,
+            sample_dir=sample_dir,
+            manifest_path=manifest_path,
+            cache_dir=raw_dataset_dir / ".datasets-cache",
+        )
+
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "dataset": dataset.name,
+                "repo_id": dataset.repo_id,
+                "samples": written_rows,
+                "sample_dir": str(sample_dir),
+                "manifest": str(manifest_path),
+            },
+            ensure_ascii=False,
+        )
+    )
+
+
+def _prepare_samples_from_parquet(
+    dataset: HuggingFaceDataset,
+    parquet_files: list[Path],
+    sample_dir: Path,
+    manifest_path: Path,
+    count: int,
+    force: bool,
+) -> int:
+    written_rows = 0
+    with manifest_path.open("w", encoding="utf-8", newline="") as manifest_file:
+        writer = csv.DictWriter(
+            manifest_file,
+            fieldnames=["rank", "path", "source_shard", *dataset.text_columns],
+            delimiter="\t",
+        )
+        writer.writeheader()
+        for parquet_file in parquet_files:
+            parquet = pq.ParquetFile(parquet_file)
+            for batch in parquet.iter_batches(
+                batch_size=256,
+                columns=[*dataset.text_columns, dataset.audio_column],
+            ):
+                for row in batch.to_pylist():
+                    if written_rows >= count:
+                        return written_rows
+                    audio = row.get(dataset.audio_column)
+                    if not isinstance(audio, dict):
+                        continue
+                    audio_path = _write_audio_sample(
+                        sample_dir=sample_dir,
+                        rank=written_rows + 1,
+                        audio=audio,
+                        force=force,
+                    )
+                    writer.writerow(
+                        {
+                            "rank": written_rows + 1,
+                            "path": audio_path.name,
+                            "source_shard": parquet_file.name,
+                            **{
+                                column: str(row.get(column, ""))
+                                for column in dataset.text_columns
+                            },
+                        }
+                    )
+                    written_rows += 1
+    return written_rows
+
+
+def _prepare_samples_from_hf_dataset(
+    dataset: HuggingFaceDataset,
+    options: DatasetSampleOptions,
+    settings: SttEvalSettings,
+    sample_dir: Path,
+    manifest_path: Path,
+    cache_dir: Path,
+) -> int:
     if not settings.hf_token:
         raise RuntimeError("請在專案根目錄 .env 設定 HF_TOKEN。")
 
     datasets_module = import_module("datasets")
-    raw_root = options.raw_root or settings.raw_root
-    sample_root = options.sample_root or settings.sample_root
-    cache_dir = raw_root / dataset.raw_dir_name / ".datasets-cache"
-    sample_dir = sample_root / dataset.name
-    sample_dir.mkdir(parents=True, exist_ok=True)
 
     loaded_dataset = datasets_module.load_dataset(
         dataset.repo_id,
@@ -106,7 +203,6 @@ def prepare_huggingface_samples(
             datasets_module.Audio(decode=False),
         )
 
-    manifest_path = sample_dir / f"first_{options.count}_transcripts.tsv"
     written_rows = 0
     with manifest_path.open("w", encoding="utf-8", newline="") as manifest_file:
         writer = csv.DictWriter(
@@ -140,19 +236,7 @@ def prepare_huggingface_samples(
             )
             written_rows += 1
 
-    print(
-        json.dumps(
-            {
-                "ok": True,
-                "dataset": dataset.name,
-                "repo_id": dataset.repo_id,
-                "samples": written_rows,
-                "sample_dir": str(sample_dir),
-                "manifest": str(manifest_path),
-            },
-            ensure_ascii=False,
-        )
-    )
+    return written_rows
 
 
 def _write_audio_sample(

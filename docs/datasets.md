@@ -40,6 +40,12 @@ uv run stt-eval download-dataset \
   --revision <revision>
 ```
 
+Hugging Face 資料集下載後會保留 Hub 上的 parquet shard，例如：
+
+```text
+data/raw/taiwanese_minnan_example_sentences/data/train-00000-of-00013.parquet
+```
+
 ## 產生樣本
 
 產生預設資料集樣本：
@@ -66,3 +72,14 @@ data/samples/<dataset name>/
 
 - `data/samples/nan-tw/`
 - `data/samples/example-sentences/`
+
+### Hugging Face parquet 展開
+
+`example-sentences` 的 raw 資料是 Hugging Face 常見的 parquet 格式。執行樣本產生時，`stt-eval` 會優先讀取本機已下載的 parquet shard，從 `audio.bytes` 欄位寫出 WAV 檔，並產生對應 manifest：
+
+```text
+data/samples/example-sentences/00001.wav
+data/samples/example-sentences/first_100_transcripts.tsv
+```
+
+raw parquet 已經在本機時，這一步不需要重新連線到 Hugging Face。如果本機 raw 目錄沒有 parquet shard，流程才會改用 Hugging Face Datasets API 讀取資料集。
