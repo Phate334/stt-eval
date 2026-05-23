@@ -1,58 +1,29 @@
 # stt-eval
 
-`stt-eval` 是用來評估 `MediaTek-Research/Breeze-ASR-26` 量化版本的工具。
+`stt-eval` 是用來評估 `MediaTek-Research/Breeze-ASR-26` 量化版本的本機工具。專案目前聚焦在準備可重現的模型產物（artifact）與評估資料集樣本，後續用固定音檔比較原始模型與不同量化版本的輸出偏移。
 
-目前保留的功能：
+## 功能
 
-- 模型準備與量化：下載 HF 原始模型，轉成 CT2 與 GGML 量化 artifacts。
+- **模型量化準備**：下載 HF 原始模型，產生 CTranslate2 與 whisper.cpp / GGML 量化產物。
+- **資料集準備**：下載 Common Voice `nan-tw` 或 Hugging Face 台語資料集，整理成 `data/samples/<dataset name>`。
+- **產物檢查**：確認模型產物目錄是否包含中繼資料、README 與量化紀錄。
 
-## 安裝
+## 文件
 
-專案使用 `uv` 管理環境：
+- [量化流程](docs/quantization.md)
+- [資料集準備](docs/datasets.md)
+- [評測決策紀錄](docs/benchmark.md)
+
+## 開發
+
+專案使用 `uv` 管理 Python 環境：
 
 ```bash
 uv sync
 ```
 
-需要跑模型轉換時安裝 extras：
+CLI 入口：
 
 ```bash
-uv sync --extra hf --extra ct2
+uv run stt-eval --help
 ```
-
-## 準備模型
-
-下載 HF 原始模型並產生所有量化版本：
-
-```bash
-uv run --extra hf --extra ct2 stt-eval prepare-models
-```
-
-只產生單一版本：
-
-```bash
-uv run --extra hf --extra ct2 stt-eval prepare-models \
-  --variant Breeze-ASR-26-int8-CT2
-```
-
-Artifacts 會放在 `artifacts/models/`，命名格式如下：
-
-- `Breeze-ASR-26-<量化版本>-CT2`
-- `Breeze-ASR-26-<量化版本>-GGML`
-
-例如：
-
-- `Breeze-ASR-26-int8-CT2`
-- `Breeze-ASR-26-q8_0-GGML`
-
-## 檢查 artifacts
-
-```bash
-uv run stt-eval validate-artifacts
-```
-
-會確認每個 artifact 目錄是否包含：
-
-- `metadata.json`
-- `README.md`
-- `QUANTIZATION.md`

@@ -1,4 +1,4 @@
-# Rules for Agents
+# Agent 規則
 
 - 盡量用 bash 提供的工具完成任務
 - 複雜流程或是第三方相依套件需要使用 Python ，必須使用 uv 在專案目錄 .venv 管理的虛擬環境安裝和執行

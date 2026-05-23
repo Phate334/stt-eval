@@ -1,52 +1,59 @@
-# Quantization
+# 量化流程
 
-This project prepares local artifacts for evaluating the quantization impact of
-`MediaTek-Research/Breeze-ASR-26`.
+本專案會在本機準備 `MediaTek-Research/Breeze-ASR-26` 的模型產物（artifact），用來評估不同模型格式與量化設定對輸出結果的影響。
 
-The goal is not to train a new model. Each artifact is derived from the same
-source model revision and is intended for comparing runtime behavior and CER
-under different inference backends and quantization types.
+這裡的目標不是訓練新模型，而是從同一個來源模型版本產生可重現的模型產物，後續用相同音檔比較推論輸出與 CER-like drift。
 
-## Targets
+## 產出目標
 
-- **HF baseline**: an unquantized Transformers snapshot used as the source of
-  all converted artifacts.
-- **CTranslate2**: converted model directories for faster-whisper /
-  CTranslate2-style serving. The current target quantization types are
-  `float16`, `int8_float16`, and `int8`.
-- **GGML / whisper.cpp**: one whisper.cpp-style model directory containing
-  multiple GGML files for the same source model. The current target
-  quantization types are `q8_0`, `q5_0`, `q4_0`, and `q4_1`.
+- **HF baseline**：未量化的 Transformers snapshot，作為所有轉換流程的來源。
+- **CTranslate2（CT2）**：提供 faster-whisper / CTranslate2 類型服務使用的模型目錄，目前準備 `float16`、`int8_float16`、`int8`。
+- **whisper.cpp / GGML**：提供 whisper.cpp 使用的 GGML 模型檔，目前準備 `q8_0`、`q5_0`、`q4_0`、`q4_1`。
 
-## Artifact Layout
+## 產物目錄
 
-- Baseline artifact: `artifacts/models/Breeze-ASR-26-f32-HF/`
-- CT2 artifacts:
-  - `artifacts/models/Breeze-ASR-26-float16-CT2/`
-  - `artifacts/models/Breeze-ASR-26-int8_float16-CT2/`
-  - `artifacts/models/Breeze-ASR-26-int8-CT2/`
-- GGML artifact:
-  - `artifacts/models/Breeze-ASR-26-GGML/`
+HF baseline：
 
-The GGML directory follows the common GGML convention of keeping multiple
-quantized files for the same model in one repository-style directory, for
-example `ggml-model-q8_0.bin` and `ggml-model-q4_0.bin`.
+```text
+artifacts/models/Breeze-ASR-26-f32-HF/
+```
 
-Each artifact directory contains model files plus generated metadata files:
+CT2 產物：
 
-- `README.md`: Hugging Face model card metadata and source model attribution.
-- `metadata.json`: local preparation metadata.
-- `QUANTIZATION.md`: exact conversion or quantization command records.
+```text
+artifacts/models/Breeze-ASR-26-float16-CT2/
+artifacts/models/Breeze-ASR-26-int8_float16-CT2/
+artifacts/models/Breeze-ASR-26-int8-CT2/
+```
 
-## Preparation
+GGML 產物：
 
-Run all artifact preparation through `uv`:
+```text
+artifacts/models/Breeze-ASR-26-GGML/
+```
+
+GGML 目錄會依照常見慣例，把同一個模型的多個量化檔放在同一個目錄，例如：
+
+```text
+ggml-model-q8_0.bin
+ggml-model-q4_0.bin
+```
+
+每個產物目錄都會包含：
+
+- `README.md`：模型卡與來源模型資訊。
+- `metadata.json`：本機準備流程的中繼資料。
+- `QUANTIZATION.md`：轉換與量化指令紀錄。
+
+## 準備產物
+
+產生全部模型產物：
 
 ```bash
 uv run --extra hf --extra ct2 stt-eval prepare-models
 ```
 
-Prepare only selected variants by passing `--variant` multiple times:
+只產生指定 variant：
 
 ```bash
 uv run --extra hf --extra ct2 stt-eval prepare-models \
@@ -54,13 +61,11 @@ uv run --extra hf --extra ct2 stt-eval prepare-models \
   --variant Breeze-ASR-26-q4_0-GGML
 ```
 
-The preparation flow downloads the HF source snapshot if needed, ensures the HF
-tokenizer assets required by CT2 exist, converts CT2 artifacts, and uses
-whisper.cpp tools to produce GGML files.
+流程會視需要下載 HF 來源模型、補齊 CT2 需要的 tokenizer 檔案、產生 CT2 產物，並透過 whisper.cpp 工具產生 GGML 量化檔。
 
-## Validation
+## 檢查產物
 
-Check the generated artifact layout and metadata files:
+檢查模型產物目錄與中繼資料是否完整：
 
 ```bash
 uv run stt-eval validate-artifacts
