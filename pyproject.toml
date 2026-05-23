@@ -9,8 +9,10 @@ description = "Breeze-ASR-26 quantization and evaluation"
 
 requires-python = ">=3.13"
 dependencies = [
+    "datasets>=4.8.5",
     "huggingface-hub>=1.2.3",
     "pydantic>=2.12.4",
+    "pydantic-settings>=2.14.1",
 ]
 
 [project.optional-dependencies]

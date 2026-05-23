@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from stt_eval.constants import MODEL_ID
+from stt_eval.quantization.constants import MODEL_ID
 from stt_eval.runtime import directory_size_bytes
 
 

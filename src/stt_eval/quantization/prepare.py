@@ -7,13 +7,13 @@ from pathlib import Path
 
 from huggingface_hub import HfApi
 
-from stt_eval.artifacts import (
+from stt_eval.quantization.artifacts import (
     ModelArtifactMetadata,
     write_metadata,
     write_quantization_record,
     write_readme,
 )
-from stt_eval.constants import (
+from stt_eval.quantization.constants import (
     ARTIFACT_DIR_BY_VARIANT,
     COMMON_HF_COPY_FILES,
     CT2_QUANTIZATION_BY_VARIANT,
