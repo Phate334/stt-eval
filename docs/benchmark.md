@@ -8,7 +8,7 @@
 
 - HF baseline。
 - CTranslate2（CT2）：`float16`、`int8_float16`、`int8`。
-- whisper.cpp / GGML 量化版本。
+- whisper.cpp / GGML 量化版本：`q8`、`q5_0`、`q4_0`、`q4_1`。
 
 主要指標：
 
@@ -61,12 +61,8 @@ curl -sS -X POST \
 下載與資料路徑：
 
 - Dataset ID：`cmn2cyd8901jemm0738nubysq`
-- Archive：`data/raw/common_voice_nan_tw_25_0/common-voice-scripted-speech-25-0-taiwan-c14db9f7.tar.gz`
-- Archive SHA256：`94bf37a7d3b369e3a6f5ac2f29b3085a3fb94a1ca167547644b65561af7e51e9`
-- 解壓目錄：`data/raw/common_voice_nan_tw_25_0/cv-corpus-25.0-2026-03-09/nan-tw/`
-- 解壓後 MP3 數量：32,426
 
-本機解壓命令：
+本機解壓：
 
 ```bash
 tar -xzf \
@@ -94,16 +90,6 @@ Common Voice `nan-tw` 文本以台語漢字為主，括號內常附台羅或白�
 皇帝菜（hông-tè-tshài）
 ```
 
-benchmark 前先移除括號內容，保留漢字 reference：
-
-```text
-皇帝菜
-```
-
-本次 Common Voice benchmark 的 reference target：
-
-- `taigi_hanzi`
-- 即「移除括號羅馬字後」的台語漢字
 
 ### 與 Breeze-ASR-26 官方 benchmark 的差異
 
@@ -112,133 +98,9 @@ Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；Common Voice `nan-
 - Common Voice `taigi_hanzi` CER 只適合比較同一設定下的相對差異。
 - 不可直接對比 Breeze-ASR-26 官方 30.13% CER。
 
-若要評估台語語音對華語漢字，需另開 `mandarin_hanzi` track，不能和 `taigi_hanzi` 混算。
-
-### 預設處理流程
-
-1. 使用官方 `test` split。
-2. 從 TSV 讀取 `path` 與 `text`。
-3. 將 `path` 對應本機 `clips/` 音檔。
-4. 移除 `text` 括號內羅馬字。
-5. 套用 deterministic normalization。
-6. 產生本機 manifest。
-
-丟棄條件：
-
-- 移除羅馬字後 reference 為空。
-- 音檔不存在。
-
-### Normalization 範圍
-
-允許：
-
-- Unicode normalization
-- 全形 / 半形正規化
-- ASCII lowercasing
-- 移除空白
-- 移除常見中文與 ASCII 標點
-- 移除括號內羅馬字
-
-不允許（主分數）：
-
-- 台語轉華語
-- 華語轉台語
-- 同義詞替換
-- LLM 修正
-- 字典式大範圍改寫
-
-## Manifest 格式
-
-所有資料集進 pipeline 前都轉為 JSONL manifest。
-
-必要欄位：
-
-- `id`
-- `audio_path`
-- `reference`
-- `reference_target`（例如 `taigi_hanzi`、`mandarin_hanzi`）
-- `dataset`
-- `split`
-
-可選欄位：
-
-- `duration_sec`
-
-資料準備 script 必須是 deterministic，並記錄：
-
-- source dataset version
-- source URL
-- split
-- filtering rules
-- normalization version
-
-## OpenAI-compatible compose smoke test
-
-日期：2026-05-19（Asia/Taipei）。
-
-目的：確認三個 compose backend 是否可透過 `/v1/audio/transcriptions` API 完成辨識。
-
-測試條件：
-
-- 測試命令：`uv run stt-eval transcribe-openai`
-- Python client：`openai==2.37.0`
-- 預設參數：`base_url=http://127.0.0.1:8080/v1`、`model=whisper-1`
-- 測試音檔：`data/samples/` duration 最大的 100 筆 MP3
-
-結果摘要（皆未產生 transcription）：
-
-- `compose.speaches-ct2.cuda.yml`：服務可起，但模型安裝需存取私有 Hugging Face repo，遇到 401（缺 `HF_TOKEN`）。
-- `compose.vllm-whisper.cuda.yml`：使用的 `vllm/vllm-openai:v0.21.0` 不支援 `--task transcription`。
-- `compose.whisper-cpp-ggml.cuda.yml`：下載 GGML 模型時 401，download service 失敗，推論服務未啟動。
-
-後續處理：
-
-- 提供可讀取 `phate334/*` 的 `HF_TOKEN`，或改用公開 artifact。
-- `vllm` backend 改用支援 audio transcription 的版本 / 啟動方式，否則從 benchmark backend 清單移除。
-
-## 結果輸出
-
-單筆 result 至少包含：
-
-- sample id
-- audio path
-- reference
-- prediction
-- CER
-- backend
-- quantization
-- model artifact path
-
-Summary 至少包含：
-
-- 模型名稱
-- backend
-- quantization
-- sample 數
-- 平均 CER
-- 評估時間
-- reference target
-- normalization version 或 git commit
-- dropped sample 數與原因
-
 ## 其他候選資料集
 
 本節僅列尚未採用為主 benchmark 的資料來源。
-
-### `formospeech/yttd_taigi_trs`
-
-狀態：高優先候選，尚未採用。
-
-- HF：https://huggingface.co/datasets/formospeech/yttd_taigi_trs
-- Gated manual access
-- 欄位含 `audio`、`duration`、`text`、`text_mandarin`
-- 約 train 50,984 / test 4,859
-
-若採用：
-
-- Breeze-style 評估優先使用 `text_mandarin`
-- `reference_target = mandarin_hanzi`
-- 與 Common Voice `taigi_hanzi` 分開報告
 
 ### `sarahwei/Taiwanese-Minnan-Example-Sentences`
 
@@ -262,14 +124,9 @@ Summary 至少包含：
 
 限制：多為詞條/短語，不適合句子級 CER 主 benchmark。
 
-### 行政院 PSA 月包
+### `TaigiSpeech/TaigiSpeech`
 
-狀態：Breeze-style reconstructed benchmark 候選。
-
-- 來源：https://www.ey.gov.tw/Page/AA7FD03FF4A55EF8
-- 可作台語語音對華語漢字 reference 的候選資料
-
-限制：官方 30 筆清單與 normalized references 未公開，自建版本只能標示 reconstructed / Breeze-style。
+暫不作為主 ASR benchmark，原因是其主要任務偏 intent classification / SLU，非句子級 ASR CER 評估。
 
 ## 暫不採用資料集
 
@@ -289,6 +146,11 @@ Summary 至少包含：
 
 原因：license 與來源資訊不足，暫不納入公開可重現 benchmark。
 
-### `TaigiSpeech/TaigiSpeech`
+- 行政院 PSA 月包
+  - https://www.ey.gov.tw/Page/AA7FD03FF4A55EF8
 
-暫不作為主 ASR benchmark，原因是其主要任務偏 intent classification / SLU，非句子級 ASR CER 評估。
+- `formospeech/yttd_taigi_trs`
+  - HF：https://huggingface.co/datasets/formospeech/yttd_taigi_trs
+  - Gated manual access
+  - 欄位含 `audio`、`duration`、`text`、`text_mandarin`
+  - 約 train 50,984 / test 4,859
