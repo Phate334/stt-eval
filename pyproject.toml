@@ -10,9 +10,7 @@ description = "Breeze-ASR-26 quantization and evaluation"
 requires-python = ">=3.13"
 dependencies = [
     "huggingface-hub>=1.2.3",
-    "openai>=2.8.1",
     "pydantic>=2.12.4",
-    "pydantic-settings>=2.14.1",
 ]
 
 [project.optional-dependencies]

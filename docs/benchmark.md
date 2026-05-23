@@ -74,12 +74,6 @@ tar -xzf \
   -C data/raw/common_voice_nan_tw_25_0
 ```
 
-小樣本 smoke test 音檔：
-
-- 目錄：`data/samples/common_voice_nan_tw_25_0/test_3_largest/`
-- `common_voice_nan-tw_38069892.mp3`（10,296 ms）
-- `common_voice_nan-tw_37521039.mp3`（9,756 ms）
-- `common_voice_nan-tw_40167468.mp3`（9,072 ms）
 
 ### 使用限制
 
@@ -189,7 +183,7 @@ Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；Common Voice `nan-
 - 測試命令：`uv run stt-eval transcribe-openai`
 - Python client：`openai==2.37.0`
 - 預設參數：`base_url=http://127.0.0.1:8080/v1`、`model=whisper-1`
-- 測試音檔：`data/samples/common_voice_nan_tw_25_0/test_3_largest/` 三筆 MP3
+- 測試音檔：`data/samples/` duration 最大的 100 筆 MP3
 
 結果摘要（皆未產生 transcription）：
 

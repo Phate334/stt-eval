@@ -39,7 +39,6 @@ def collect_runtime_metadata() -> dict[str, str | None]:
         "os_release": platform.release(),
         "architecture": platform.machine(),
         "python_version": platform.python_version(),
-        "openai_version": package_version("openai"),
         "huggingface_hub_version": package_version("huggingface-hub"),
         "transformers_version": package_version("transformers"),
         "ctranslate2_version": package_version("ctranslate2"),
