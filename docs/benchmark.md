@@ -29,185 +29,40 @@
 
 ### 與傳統 ASR 評測的差異
 
-Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；部分資料集參考答案可能是台語漢字、台羅或華語對譯。由於主指標不使用資料集文字，因此：
+Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；教育部例句資料同時提供台語漢字、羅馬字與華語對譯。由於主指標不使用資料集文字，因此：
 
 - 主分數代表量化模型相對原始模型輸出的漂移程度，不代表人工參考答案 CER。
 - 不可直接對比 Breeze-ASR-26 官方 30.13% CER。
 - 若要另外報告資料集參考答案 CER，必須獨立標示為輔助分析，不能與偽參考答案指標混用。
 
-## 其他候選資料集
+## 目前採用資料集
 
-本節記錄 2026-05-23 重新調查的候選資料來源。
+### 教育部臺灣台語常用詞辭典例句
 
-### Common Voice `nan-tw`
+狀態：目前唯一採用的評測音訊來源。
 
-狀態：候選資料集。因文字品質與授權 / 重新代管限制，目前不作為主資料集。
+- 來源頁面：https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/
+- 文字來源：`kautian.ods`
+- 音檔來源：`leku-wav.zip`
+- CLI dataset 名稱：`moe-example-sentences`
+- ODS 工作表：`例句`
+- 主要欄位：`漢字`、`羅馬字`、`華語`、`音檔檔名`
+- 本機 manifest：`data/raw/moe_sutian_example_sentences/leku.tsv`
 
-- 來源：https://mozilladatacollective.com/datasets/cmn2cyd8901jemm0738nubysq
-- Dataset ID：`cmn2cyd8901jemm0738nubysq`
-- 語系代碼：`nan-tw`
-- 語言：Taiwanese（Minnan），也就是台語 / 台灣閩南語。
-- 發行版本：`cv-corpus-25.0-2026-03-09`
-- 格式：MP3 archive。
-- 授權：CC0-1.0。
+選用理由：
 
-資料規模：
+- 直接使用教育部官方原始檔，避免依賴第三方重新整理或鏡像資料。
+- 例句音檔比詞條音檔更接近日常短句，適合做量化輸出偏移評估。
+- ODS 內保留台語漢字、羅馬字與華語對譯，方便抽查與除錯；主分數仍只依賴固定音檔與模型輸出。
 
-- 299 位 speaker。
-- 總錄音 23.87 小時。
-- validated 21.78 小時。
-- validated clips：29,587。
+限制與注意事項：
 
-官方切分：
+- `leku-wav.zip` 約 9GB 以上，下載與解壓需要足夠磁碟空間。
+- 目前先不納入 Common Voice、Hugging Face 鏡像或其他資料來源。
+- 若未來要比較不同資料版本，需記錄官方檔案下載日期、檔案大小與 checksum。
 
-- Train：11,507 clips。
-- Dev：5,999 clips。
-- Test：6,423 clips。
+## 下一步建議
 
-限制與建議：
-
-- `nan-tw` 文本以台語漢字為主，括號內常附台羅或白話字參考發音，例如 `皇帝菜（hông-tè-tshài）`；文字品質與 Breeze-ASR-26 預期輸出有落差。
-- 本任務主分數不使用資料集文字，因此文字問題不是計分阻礙，但仍會增加人工檢查與除錯成本。
-- Common Voice 頁面明確禁止重新代管 / 重新分享資料集；本專案不可上傳音檔、原始壓縮檔、完整 TSV 或轉換後資料副本。
-- 若使用，只能保留準備流程、正規化程式、checksum、抽樣清單與操作說明，不提供資料鏡像。
-- 可作為備用量化偏移評估集；不建議作為第一優先資料集。
-
-下載日期：2026-05-19（Asia/Taipei）。
-
-官方下載流程：
-
-1. 先登入 Mozilla Data Collective，在 dataset 頁面接受下載條款。
-2. 在專案根目錄的 `.env` 放入 `MDC_API_KEY`。
-3. 使用官方 API 取得一次性的預簽下載網址：
-
-```bash
-curl -sS -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $MDC_API_KEY" \
-  https://mozilladatacollective.com/api/datasets/cmn2cyd8901jemm0738nubysq/download
-```
-
-本機解壓：
-
-```bash
-tar -xzf \
-  data/raw/common_voice_nan_tw_25_0/common-voice-scripted-speech-25-0-taiwan-c14db9f7.tar.gz \
-  -C data/raw/common_voice_nan_tw_25_0
-```
-
-### `sarahwei/Taiwanese-Minnan-Example-Sentences`
-
-狀態：高優先候選，可作為主要量化偏移評估集。
-
-- HF：https://huggingface.co/datasets/sarahwei/Taiwanese-Minnan-Example-Sentences
-- 來源：教育部臺灣閩南語常用詞辭典 / Sutian Resource Center，資料集卡標示文字來源 `kautian.ods`、音檔來源 `leku-wav.zip`。
-- 欄位：`hanzi`、`chinese`、`minnan roman`、`audio`
-- 切分：只有 `train`。
-- 筆數：15,708。
-- 音檔長度：HF viewer 顯示約 0.86 到 14.3 秒。
-- 授權：CC BY-NC-SA 4.0。
-- HF 使用狀況：截至調查時資料集卡顯示約 193 次每月下載；HF 自動列出 3 個 fine-tuned model 使用此資料集，皆為 `Curiousfox/helsinki_new_*`，看起來偏翻譯 / 文字模型用途，未看到公開 ASR 評測採用紀錄。
-
-與 `Taiwanese-Minnan-Sutiau` 的差異：
-
-- `Example-Sentences` 是例句音檔，長度分布較接近日常句子，較能測到量化後在短句、長句上的輸出偏移。
-- 欄位雖含台語漢字、華語對譯、台羅/羅馬字，但主評估不依賴這些文字欄位。
-- 相較 `Sutiau`，較適合做主要音訊集合。
-
-限制與建議：
-
-- NC-SA 不適合作為通用公開預設評測資料；若只做內部研究可以納入。
-- 只有 train split，需固定抽樣規則產生評估子集，例如用固定規則抽 500 或 1,000 筆，並記錄資料集 revision。
-- 主分數只使用音檔與模型輸出；`hanzi`、`chinese`、`minnan roman` 不需清理。
-
-### `sarahwei/Taiwanese-Minnan-Sutiau`
-
-狀態：低優先候選，適合做詞條 / 短語 smoke test，不建議作為主量化偏移評測。
-
-- HF：https://huggingface.co/datasets/sarahwei/Taiwanese-Minnan-Sutiau
-- 來源：教育部臺灣閩南語常用詞辭典 / Sutian Resource Center。
-- 欄位：`hanzi`、`minnan roman`、`audio`
-- 切分：只有 `train`。
-- 筆數：21,011。
-- 音檔長度：HF viewer 顯示約 0.39 到 3.28 秒。
-- 授權：CC BY-NC-SA 4.0。
-- HF 使用狀況：截至調查時資料集卡顯示約 188 次每月下載；未看到 HF 自動列出模型使用此資料集，也未查到公開 ASR 評測採用紀錄。
-
-與 `Example-Sentences` 的差異：
-
-- `Sutiau` 是詞條、短語、成語或很短的固定搭配，音檔明顯短於 `Example-Sentences`。
-- 文字欄位較少，但主評估不依賴文字欄位，所以這不是阻礙。
-- 音檔很短，字元編輯距離容易被單一字差異放大；對量化後的小幅退化不一定穩定。
-
-限制與建議：
-
-- 可用來測量極短 utterance 下量化是否造成漏字、幻覺、空輸出。
-- 不建議用作主排名；若使用，應獨立報告為 `sutiau_short_phrase` 子集。
-
-### `TaigiSpeech/TaigiSpeech`
-
-狀態：可納入量化偏移評估候選；若做 intent 任務，則另開 SLU 評估。
-
-- HF：https://huggingface.co/datasets/TaigiSpeech/TaigiSpeech
-- 論文：https://arxiv.org/abs/2603.21478
-- 任務：Spoken Language Understanding（SLU）/ intent classification。
-- 場景：長照、健康緊急狀況、智慧家庭語音命令。
-- 授權：CC BY 4.0。
-- 筆數：3,079。
-- 切分：
-  - Train：1,600 筆樣本，10 位 speaker，每個 intent 200 筆。
-  - Val：519 筆樣本，5 位 speaker。
-  - Test：960 筆樣本，6 位 speaker，每個 intent 120 筆。
-- Speaker 切分：train / val / test 的 speaker 不重疊。
-- 欄位：HF 資料集卡標示 `audio`、`speaker_id`、`intent`；沒有逐字轉錄欄位。
-- 音訊：WAV、48 kHz、mono。
-- Speaker：21 位，年齡 20 到 78 歲，且多數 54 歲以上。
-- Intent 類別：`SOS_CALL`、`FALL_HELP`、`BREATHING_CHEST_EMERG`、`PAIN_GENERAL`、`CALL_CONTACT`、`LIGHT_ON`、`LIGHT_OFF`、`CANCEL_ALERT`。
-- HF 使用狀況：截至調查時資料集卡顯示約 327 次每月下載；資料集本身搭配 2026 arXiv 論文發表，外部報導多聚焦低資源台語 intent detection，未看到逐字 ASR CER 評測採用紀錄。
-
-限制與建議：
-
-- 因無逐字轉錄，不能計算傳統人工參考答案 CER。
-- 可直接用同一批音檔比較原始模型與量化模型輸出的字元編輯距離，作為真實場景語音命令的量化偏移評估。
-- 若後續要做任務層評估，可把原始 / 量化模型輸出接到同一個 intent classifier 或關鍵詞規則，觀察量化對 intent accuracy 的影響；這是 SLU 評估，不應與輸出偏移指標混在同一張表。
-
-## 目前結論
-
-- `sarahwei/Taiwanese-Minnan-Example-Sentences`：最值得下一步試跑。雖然授權為 NC-SA 且只有 train split，但例句音檔長度與數量適合作為主要偏移評估集合。
-- `TaigiSpeech/TaigiSpeech`：缺逐字轉錄已不是阻礙；可納入輸出偏移評估。若要看任務效果，再另開 intent / SLU 評估。
-- `nan-tw`：因文字品質與重新代管 / 重新分享授權限制，降為候選資料集；可保留現有準備流程，但不作為第一優先。
-- `sarahwei/Taiwanese-Minnan-Sutiau`：可作短詞條壓力測試，觀察量化後短音檔空輸出或錯字率，不適合主評測。
-
-下一步建議：
-
-- 先固定 `Example-Sentences` 的 dataset revision 與抽樣規則，建立 `example_sentences_eval` 音訊子集，不處理文字欄位。
-- 同一批音檔跑原始模型、CT2 與 GGML 量化模型，以原始模型輸出作偽參考答案，報告每個格式的字元編輯距離 / CER-like drift。
-- 可加跑 `TaigiSpeech` test split，補一組真實語音命令場景的輸出偏移結果。
-- 另外抽少量 `Sutiau` 做短語 smoke test，檢查極短音訊下量化模型是否更容易空輸出或幻覺輸出。
-
-## 暫不採用資料集
-
-### Common Voice 鏡像 / 衍生副本
-
-- `hydedada/nan_tw`
-- `jiyuntu/common_voice_minnan`
-- `lazy-worm/preprocessed_cv-nan-tw-validate-split-2`
-
-原因：疑似重新代管或衍生重發，與 Mozilla Data Collective 限制衝突。
-
-### 授權或來源不明
-
-- `thomas0104/nan_tw_soap_opera`
-- `gacky1601/Taiwanese_ASR`
-- `Curiousfox/NRP_NIE04B_Hokkien_dataset`
-
-原因：授權與來源資訊不足，暫不納入公開可重現評測。
-
-- 行政院 PSA 月包
-  - https://www.ey.gov.tw/Page/AA7FD03FF4A55EF8
-
-- `formospeech/yttd_taigi_trs`
-  - HF：https://huggingface.co/datasets/formospeech/yttd_taigi_trs
-  - 需要人工申請權限
-  - 欄位含 `audio`、`duration`、`text`、`text_mandarin`
-  - 約 train 50,984 / test 4,859
+- 固定 `leku.tsv` 的抽樣規則，例如取前 500 或 1,000 筆，建立主要評估子集。
+- 同一批音檔跑原始模型、CT2 與 GGML 量化模型，以原始模型輸出作偽參考答案。
+- 評測輸出需記錄資料來源 URL、下載日期、`kautian.ods` 與 `leku-wav.zip` 的 checksum。

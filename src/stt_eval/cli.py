@@ -46,7 +46,6 @@ def main(argv: list[str] | None = None) -> None:
             DatasetDownloadOptions(
                 dataset=args.dataset,
                 raw_root=args.raw_root,
-                revision=args.revision,
                 force=args.force,
                 extract=not args.no_extract,
             )
@@ -58,7 +57,6 @@ def main(argv: list[str] | None = None) -> None:
                 dataset=args.dataset,
                 raw_root=args.raw_root,
                 sample_root=args.sample_root,
-                revision=args.revision,
                 count=args.count,
                 force=args.force,
             )
@@ -92,10 +90,9 @@ def _add_download_dataset_parser(subparsers: argparse._SubParsersAction) -> None
         "--dataset",
         default=None,
         choices=dataset_choices(),
-        help="Dataset 名稱。預設讀 .env 或設定中的 default_dataset，目前預設 nan-tw。",
+        help="Dataset 名稱。預設讀 .env 或設定中的 default_dataset，目前預設 moe-example-sentences。",
     )
     parser.add_argument("--raw-root", type=Path)
-    parser.add_argument("--revision")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-extract", action="store_true")
 
@@ -108,11 +105,10 @@ def _add_prepare_dataset_samples_parser(
         "--dataset",
         default=None,
         choices=dataset_choices(),
-        help="Dataset 名稱。預設讀 .env 或設定中的 default_dataset，目前預設 nan-tw。",
+        help="Dataset 名稱。預設讀 .env 或設定中的 default_dataset，目前預設 moe-example-sentences。",
     )
     parser.add_argument("--raw-root", type=Path)
     parser.add_argument("--sample-root", type=Path)
-    parser.add_argument("--revision")
     parser.add_argument("--count", type=int, default=100)
     parser.add_argument("--force", action="store_true")
 

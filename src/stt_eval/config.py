@@ -11,8 +11,7 @@ class SttEvalSettings(BaseSettings):
         extra="ignore",
     )
 
-    mdc_api_key: str = Field(default="", alias="MDC_API_KEY")
     hf_token: str = Field(default="", alias="HF_TOKEN")
-    default_dataset: str = "nan-tw"
+    default_dataset: str = "moe-example-sentences"
     raw_root: Path = Path("data/raw")
     sample_root: Path = Path("data/samples")

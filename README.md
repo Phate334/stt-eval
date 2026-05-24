@@ -5,7 +5,7 @@
 ## 功能
 
 - **模型量化準備**：下載 HF 原始模型，產生 CTranslate2 與 whisper.cpp / GGML 量化產物。
-- **資料集準備**：下載 Common Voice `nan-tw` 或 Hugging Face 台語資料集，整理成 `data/samples/<dataset name>`。
+- **資料集準備**：下載教育部臺灣台語常用詞辭典例句資料，整理成 `data/samples/<dataset name>`。
 - **產物檢查**：確認模型產物目錄是否包含中繼資料、README 與量化紀錄。
 
 ## 文件
@@ -13,6 +13,16 @@
 - [量化流程](docs/quantization.md)
 - [資料集準備](docs/datasets.md)
 - [評測決策紀錄](docs/benchmark.md)
+
+## 資料來源與授權提醒
+
+目前預設資料集為教育部「臺灣台語常用詞辭典」相關資源頁提供的例句資料：
+
+- 來源頁面：https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/
+- 文字來源：`kautian.ods`
+- 音檔來源：`leku-wav.zip`
+
+本專案只提供下載、解壓縮與整理腳本，不重新散布教育部原始檔、音檔或整理後的完整資料副本。使用資料前請自行確認教育部網站公告的授權與使用限制，並避免將 `data/raw/`、`data/samples/` 內的資料提交到版控或公開發布。
 
 ## 開發
 
