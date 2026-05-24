@@ -63,6 +63,7 @@ Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；教育部例句資
 
 ## 下一步建議
 
-- 固定 `leku.tsv` 的抽樣規則，例如取前 500 或 1,000 筆，建立主要評估子集。
+- 目前固定 benchmark 子集先採 `hanzi` 字數最長 100 筆，輸出到 `data/samples/moe-example-sentences-longest-hanzi-100/`。
+- 後續可視評測時間把 `--count` 擴大到 500 或 1,000 筆，沿用同一個 `longest-hanzi` 抽樣規則。
 - 同一批音檔跑原始模型、CT2 與 GGML 量化模型，以原始模型輸出作偽參考答案。
 - 評測輸出需記錄資料來源 URL、下載日期、`kautian.ods` 與 `leku-wav.zip` 的 checksum。

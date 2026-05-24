@@ -104,19 +104,40 @@ def prepare_moe_samples(
     text_path = raw_dataset_dir / dataset.text_archive_name
     audio_dir = raw_dataset_dir / dataset.audio_extract_dir_name
     manifest_path = raw_dataset_dir / dataset.manifest_name
-    sample_dir = sample_root / dataset.name
-    sample_manifest_path = sample_dir / f"first_{options.count}_transcripts.tsv"
+    sample_dir = sample_root / _sample_dir_name(
+        dataset_name=dataset.name,
+        selection=options.selection,
+        count=options.count,
+    )
+    sample_manifest_path = sample_dir / _sample_manifest_name(
+        selection=options.selection,
+        count=options.count,
+    )
 
     if not manifest_path.exists():
         _ensure_downloaded(text_path, audio_dir)
         _write_example_manifest(text_path, audio_dir, manifest_path)
 
-    selected_rows = _read_manifest_rows(manifest_path, options.count)
+    selected_rows = _select_manifest_rows(
+        manifest_path=manifest_path,
+        count=options.count,
+        selection=options.selection,
+    )
     sample_dir.mkdir(parents=True, exist_ok=True)
     with sample_manifest_path.open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(
             file,
-            fieldnames=["rank", "path", "source_path", "hanzi", "tailo", "mandarin"],
+            fieldnames=[
+                "rank",
+                "path",
+                "hanzi_char_count",
+                "source_rank",
+                "source_audio_id",
+                "source_audio_path",
+                "hanzi",
+                "tailo",
+                "mandarin",
+            ],
             delimiter="\t",
         )
         writer.writeheader()
@@ -131,7 +152,10 @@ def prepare_moe_samples(
                 {
                     "rank": rank,
                     "path": target_path.name,
-                    "source_path": row["audio_path"],
+                    "hanzi_char_count": len(row["hanzi"]),
+                    "source_rank": row["rank"],
+                    "source_audio_id": row["audio_id"],
+                    "source_audio_path": row["audio_path"],
                     "hanzi": row["hanzi"],
                     "tailo": row["tailo"],
                     "mandarin": row["mandarin"],
@@ -144,6 +168,7 @@ def prepare_moe_samples(
                 "ok": True,
                 "dataset": dataset.name,
                 "samples": len(selected_rows),
+                "selection": options.selection,
                 "sample_dir": str(sample_dir),
                 "manifest": str(sample_manifest_path),
             },
@@ -349,16 +374,31 @@ def _collect_audio_files(audio_dir: Path) -> dict[str, Path]:
     return {path.stem: path for path in audio_files}
 
 
-def _read_manifest_rows(manifest_path: Path, count: int) -> list[dict[str, str]]:
+def _select_manifest_rows(
+    manifest_path: Path,
+    count: int,
+    selection: str,
+) -> list[dict[str, str]]:
     with manifest_path.open("r", encoding="utf-8", newline="") as file:
         reader = csv.DictReader(file, delimiter="\t")
-        rows: list[dict[str, str]] = []
-        for row in reader:
-            if len(rows) >= count:
-                break
-            if row.get("audio_path"):
-                rows.append(row)
-    return rows
+        rows = [row for row in reader if row.get("audio_path")]
+
+    if selection == "first":
+        return rows[:count]
+    if selection == "longest-hanzi":
+        rows.sort(key=lambda row: (-len(row["hanzi"]), row["audio_id"]))
+        return rows[:count]
+    raise RuntimeError(f"不支援的樣本挑選方式：{selection}")
+
+
+def _sample_dir_name(dataset_name: str, selection: str, count: int) -> str:
+    return f"{dataset_name}-{selection}-{count}"
+
+
+def _sample_manifest_name(selection: str, count: int) -> str:
+    if selection == "first":
+        return f"first_{count}_transcripts.tsv"
+    return f"{selection.replace('-', '_')}_{count}.tsv"
 
 
 def _ensure_downloaded(text_path: Path, audio_dir: Path) -> None:

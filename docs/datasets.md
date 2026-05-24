@@ -56,7 +56,7 @@ uv run stt-eval download-dataset --force
 
 ## 產生樣本
 
-產生預設前 100 筆例句音檔樣本：
+產生預設 100 筆例句音檔樣本。預設挑選方式是依 `hanzi` 字數排序，取最長的樣本，適合作為固定 benchmark 音訊集合：
 
 ```bash
 uv run stt-eval prepare-dataset-samples
@@ -68,13 +68,19 @@ uv run stt-eval prepare-dataset-samples
 uv run stt-eval prepare-dataset-samples --count 1000
 ```
 
+若要改成依原始 manifest 順序取前 N 筆：
+
+```bash
+uv run stt-eval prepare-dataset-samples --selection first --count 100
+```
+
 樣本會輸出到：
 
 ```text
-data/samples/moe-example-sentences/
+data/samples/moe-example-sentences-longest-hanzi-100/
 ├── 00001.wav
 ├── 00002.wav
-└── first_<count>_transcripts.tsv
+└── longest_hanzi_100.tsv
 ```
 
-樣本 manifest 保留原始例句文字與來源音檔路徑，後續評測可以只使用 `path` 欄位的固定音檔集合。
+樣本 manifest 保留 `hanzi` 字數、原始例句文字與來源音檔路徑，後續評測可以只使用 `path` 欄位的固定音檔集合。

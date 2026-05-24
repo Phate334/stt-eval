@@ -1,5 +1,9 @@
 from stt_eval.config import SttEvalSettings
-from stt_eval.datasets.base import DatasetDownloadOptions, DatasetSampleOptions
+from stt_eval.datasets.base import (
+    SAMPLE_SELECTIONS,
+    DatasetDownloadOptions,
+    DatasetSampleOptions,
+)
 from stt_eval.datasets.moe import (
     MOE_DATASETS,
     MoeDataset,
@@ -41,6 +45,7 @@ def _resolve_dataset(dataset_name: str) -> MoeDataset:
 __all__ = [
     "DatasetDownloadOptions",
     "DatasetSampleOptions",
+    "SAMPLE_SELECTIONS",
     "dataset_choices",
     "download_dataset",
     "prepare_dataset_samples",

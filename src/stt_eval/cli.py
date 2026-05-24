@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from stt_eval.datasets import (
+    SAMPLE_SELECTIONS,
     DatasetDownloadOptions,
     DatasetSampleOptions,
     dataset_choices,
@@ -58,6 +59,7 @@ def main(argv: list[str] | None = None) -> None:
                 raw_root=args.raw_root,
                 sample_root=args.sample_root,
                 count=args.count,
+                selection=args.selection,
                 force=args.force,
             )
         )
@@ -110,6 +112,12 @@ def _add_prepare_dataset_samples_parser(
     parser.add_argument("--raw-root", type=Path)
     parser.add_argument("--sample-root", type=Path)
     parser.add_argument("--count", type=int, default=100)
+    parser.add_argument(
+        "--selection",
+        choices=SAMPLE_SELECTIONS,
+        default="longest-hanzi",
+        help="樣本挑選方式。預設挑 hanzi 字數最長的樣本。",
+    )
     parser.add_argument("--force", action="store_true")
 
 
