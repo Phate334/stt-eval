@@ -18,7 +18,7 @@
 
 目前預設資料集為教育部「臺灣台語常用詞辭典」相關資源頁提供的例句資料：
 
-- 來源頁面：https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/
+- 來源頁面：[教育部臺灣台語常用詞辭典相關資源](https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/)
 - 文字來源：`kautian.ods`
 - 音檔來源：`leku-wav.zip`
 
@@ -37,3 +37,19 @@ CLI 入口：
 ```bash
 uv run stt-eval --help
 ```
+
+比較 `results/` 內各版本相對於 baseline 的 CER：
+
+```bash
+uv run stt-eval compare-results --baseline vllm-hf-float16.jsonl
+```
+
+預設 `--normalization strip-whitespace`，會先移除 transcript 內所有空白，再用 baseline transcription 當 reference，對其他 `jsonl` 計算聚合 CER。
+
+若要用較接近 Breeze-ASR-26 公開評測描述的口徑，可以改用：
+
+```bash
+uv run stt-eval compare-results --baseline vllm-hf-float16.jsonl --normalization breeze-compatible
+```
+
+`breeze-compatible` 目前定義為移除空白、去除 Unicode 標點、並將英文轉小寫；這是依公開 model card 的評測描述近似，並不是官方釋出的逐步實作。

@@ -2,7 +2,7 @@
 
 本目錄的主要產出是每個模型版本各一份 `jsonl` 推論結果。正式比較請優先使用根目錄下的 `*.jsonl`。
 
-音檔來源：`data/samples/moe-example-sentences-longest-hanzi-100`
+來源教育部台語 leku 資料集前 100 筆最長的樣本推論結果
 
 | 版本 | 推論結果 | 成功/總數 | VRAM MiB |
 |---|---|---:|---:|
@@ -14,6 +14,30 @@
 | whisper.cpp / GGML `q4_1` | `whisper-cpp-ggml-q4_1.jsonl` | 100/100 | 1935-1935 |
 | whisper.cpp / GGML `q5_0` | `whisper-cpp-ggml-q5_0.jsonl` | 100/100 | 2027-2027 |
 | whisper.cpp / GGML `q8_0` | `whisper-cpp-ggml-q8_0.jsonl` | 100/100 | 2575-2575 |
+
+## 相對 baseline 的 CER
+
+以 `vllm-hf-float16.jsonl` 作為 baseline reference，先移除 transcript 內所有空白，再依字元級 Levenshtein distance 計算聚合 CER：
+
+`CER = (S + D + I) / N`
+
+其中 `S` 為 substitution、`D` 為 deletion、`I` 為 insertion、`N` 為 baseline reference 的總字元數。
+
+| 比較版本 | CER | 字元錯誤/參考字元 | 完全一致 |
+|---|---:|---:|---:|
+| `ct2-int8_float16.jsonl` | 0.1157 | 633/5470 | 11 |
+| `ct2-float16.jsonl` | 0.1176 | 643/5470 | 7 |
+| `ct2-int8.jsonl` | 0.1263 | 691/5470 | 5 |
+| `whisper-cpp-ggml-q5_0.jsonl` | 0.1803 | 986/5470 | 5 |
+| `whisper-cpp-ggml-q8_0.jsonl` | 0.1879 | 1028/5470 | 6 |
+| `whisper-cpp-ggml-q4_0.jsonl` | 0.1927 | 1054/5470 | 2 |
+| `whisper-cpp-ggml-q4_1.jsonl` | 0.2558 | 1399/5470 | 2 |
+
+完整逐檔 worst samples 報表請看 `cer-baseline.md`。可用下面指令重新產生：
+
+```bash
+uv run stt-eval compare-results --baseline vllm-hf-float16.jsonl --results-dir results --output results/cer-baseline.md
+```
 
 ## llama.cpp / GGML 觀察
 
@@ -29,8 +53,6 @@ JSONL 內可以看到各版本的第一筆樣本（`sample_index=1`）普遍比�
 
 
 ## vLLM 記憶體用量
-
-vLLM 成功 run 來源：`artifacts/compose-benchmark-20260524T080918Z/`。
 
 啟動 log 重點：
 

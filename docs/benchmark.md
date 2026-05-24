@@ -15,6 +15,7 @@
 - 以原始模型輸出作為偽參考答案（pseudo-reference），計算量化模型輸出相對原始模型輸出的 CER / 字元編輯距離。
 - 補充統計：完全相同率、空輸出率、長度差、插入 / 刪除 / 替換比例。
 - 每次結果都要記錄原始模型格式、量化格式、解碼參數、正規化規則版本或 git commit，避免不同批次分數無法比較。
+- 目前 CLI 提供兩種主要口徑：`strip-whitespace` 作為量化漂移預設比較方式；`breeze-compatible` 作為較接近 Breeze-ASR-26 公開評測描述的相容模式。
 
 資料集選擇原則：
 
@@ -26,6 +27,12 @@
 ## 偽參考答案與文字處理
 
 傳統 ASR CER 會使用資料集提供的人工參考答案；本專案目前改採原始模型輸出作為偽參考答案。資料集文字只保留為抽查與除錯輔助，不參與主分數。
+
+目前 compare-results 的 normalization 策略：
+
+- `raw`：不做文字正規化，適合檢查空白、換行與標點是否本身就是你要觀察的輸出差異。
+- `strip-whitespace`：移除所有空白，適合目前量化漂移主報表，避免空格與換行把分數拉偏。
+- `breeze-compatible`：移除空白、去除 Unicode 標點、將英文轉小寫。這是依 Breeze-ASR-26 公開 model card 對標點、sentence breaks、英文大小寫的描述所做的相容近似，不代表官方逐步實作完全相同。
 
 ### 與傳統 ASR 評測的差異
 
@@ -41,7 +48,7 @@ Breeze-ASR-26 對台語語音的輸出目標偏華語漢字；教育部例句資
 
 狀態：目前唯一採用的評測音訊來源。
 
-- 來源頁面：https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/
+- 來源頁面：[教育部臺灣台語常用詞辭典相關資源](https://sutian.moe.edu.tw/und-hani/siongkuantsuguan/)
 - 文字來源：`kautian.ods`
 - 音檔來源：`leku-wav.zip`
 - CLI dataset 名稱：`moe-example-sentences`
