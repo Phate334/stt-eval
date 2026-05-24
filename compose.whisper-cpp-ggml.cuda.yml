@@ -32,6 +32,9 @@ services:
     depends_on:
       download:
         condition: service_completed_successfully
+    environment:
+      # Workaround: prefer host NVIDIA driver libs over CUDA compat libcuda.so.1
+      LD_LIBRARY_PATH: "/lib/x86_64-linux-gnu:/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib"
     ports:
       - "8080:8080"
     volumes:

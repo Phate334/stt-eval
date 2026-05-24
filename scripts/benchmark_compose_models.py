@@ -19,6 +19,7 @@ from openai import OpenAI
 
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLE_DIR = ROOT / "data/samples/moe-example-sentences-longest-hanzi-100"
+OPENAI_TIMEOUT_SECONDS = 300.0
 ERROR_PATTERNS = (
     re.compile(r"\b(error|exception|traceback|failed|fatal|cuda out of memory|oom)\b", re.I),
 )
@@ -221,7 +222,11 @@ def collect_logs(target: Target, env: dict[str, str], out_dir: Path) -> tuple[st
 
 
 def transcribe_all(target: Target, out_dir: Path) -> dict[str, Any]:
-    client = OpenAI(api_key="local", base_url="http://127.0.0.1:8080/v1")
+    client = OpenAI(
+        api_key="local",
+        base_url="http://127.0.0.1:8080/v1",
+        timeout=OPENAI_TIMEOUT_SECONDS,
+    )
     wavs = sorted(SAMPLE_DIR.glob("*.wav"))
     result_path = out_dir / f"{target.slug}.jsonl"
     memory_samples = []
