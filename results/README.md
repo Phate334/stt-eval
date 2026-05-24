@@ -25,19 +25,19 @@
 
 其中 `S` 為 substitution、`D` 為 deletion、`I` 為 insertion、`N` 為 baseline reference 的總字元數。
 
-| 比較版本 | CER | 相對上一列劣化 | 字元錯誤/參考字元 | 完全一致 |
+| 比較版本 | CER | 相對 CT2 float16 差異 | 字元錯誤/參考字元 | 完全一致 |
 |---|---:|---:|---:|---:|
-| `ct2-int8_float16.jsonl` | 0.1157 | - | 633/5470 | 11 |
-| `ct2-float16.jsonl` | 0.1176 | 1.6% | 643/5470 | 7 |
+| `ct2-int8_float16.jsonl` | 0.1157 | -1.6% | 633/5470 | 11 |
+| `ct2-float16.jsonl` | 0.1176 | 0.0% | 643/5470 | 7 |
 | `ct2-int8.jsonl` | 0.1263 | 7.4% | 691/5470 | 5 |
-| `whisper-cpp-ggml-q5_0.jsonl` | 0.1803 | 42.8% | 986/5470 | 5 |
-| `whisper-cpp-ggml-q8_0.jsonl` | 0.1879 | 4.2% | 1028/5470 | 6 |
-| `whisper-cpp-ggml-q4_0.jsonl` | 0.1927 | 2.6% | 1054/5470 | 2 |
-| `whisper-cpp-ggml-q4_1.jsonl` | 0.2558 | 32.7% | 1399/5470 | 2 |
+| `whisper-cpp-ggml-q5_0.jsonl` | 0.1803 | 53.3% | 986/5470 | 5 |
+| `whisper-cpp-ggml-q8_0.jsonl` | 0.1879 | 59.8% | 1028/5470 | 6 |
+| `whisper-cpp-ggml-q4_0.jsonl` | 0.1927 | 63.9% | 1054/5470 | 2 |
+| `whisper-cpp-ggml-q4_1.jsonl` | 0.2558 | 117.5% | 1399/5470 | 2 |
 
 ![VRAM 與 CER 取捨](vram-cer-tradeoff.svg)
 
-若目標是「節省最多 VRAM，同時盡量少犧牲 CER」，目前 `CT2 int8_float16` 是最均衡的選擇：相對 vLLM 約省 50.3% VRAM，CER 也是所有比較版本中最低的 0.1157。`CT2 int8` 的 VRAM 幾乎相同，但 CER 比上一列劣化 7.4%；`q4_0` 雖然更省 VRAM，但 CER 已提高到 0.1927，取捨成本明顯變大。
+若目標是「節省最多 VRAM，同時盡量少犧牲 CER」，目前 `CT2 int8_float16` 是最均衡的選擇：相對 vLLM 約省 50.3% VRAM，CER 也是所有比較版本中最低的 0.1157。`CT2 int8` 的 VRAM 幾乎相同，但 CER 相對 `CT2 float16` 高 7.4%；`q4_0` 雖然更省 VRAM，但 CER 已提高到 0.1927，取捨成本明顯變大。
 
 ## CT2 量化平台相容性
 
