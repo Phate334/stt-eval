@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">VRAM vs CER trade-off</title>
+  <desc id="desc">Scatter plot comparing VRAM saved versus vLLM and CER. CT2 int8_float16 is highlighted as the best balance.</desc>
+  <rect width="1200" height="720" fill="#ffffff"/>
+  <text x="600" y="44" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#111111">VRAM vs CER trade-off</text>
+
+  <g font-family="Arial, sans-serif" font-size="16" fill="#333333">
+    <line x1="90" y1="600" x2="1110" y2="600" stroke="#222222" stroke-width="2"/>
+    <line x1="90" y1="80" x2="90" y2="600" stroke="#222222" stroke-width="2"/>
+
+    <g stroke="#d0d0d0" stroke-width="1">
+      <line x1="260" y1="80" x2="260" y2="600"/>
+      <line x1="430" y1="80" x2="430" y2="600"/>
+      <line x1="600" y1="80" x2="600" y2="600"/>
+      <line x1="770" y1="80" x2="770" y2="600"/>
+      <line x1="940" y1="80" x2="940" y2="600"/>
+      <line x1="1110" y1="80" x2="1110" y2="600"/>
+      <line x1="90" y1="538.8" x2="1110" y2="538.8"/>
+      <line x1="90" y1="477.6" x2="1110" y2="477.6"/>
+      <line x1="90" y1="416.5" x2="1110" y2="416.5"/>
+      <line x1="90" y1="355.3" x2="1110" y2="355.3"/>
+      <line x1="90" y1="294.1" x2="1110" y2="294.1"/>
+      <line x1="90" y1="232.9" x2="1110" y2="232.9"/>
+      <line x1="90" y1="171.8" x2="1110" y2="171.8"/>
+      <line x1="90" y1="110.6" x2="1110" y2="110.6"/>
+    </g>
+
+    <g text-anchor="middle">
+      <text x="90" y="630">0</text>
+      <text x="260" y="630">10</text>
+      <text x="430" y="630">20</text>
+      <text x="600" y="630">30</text>
+      <text x="770" y="630">40</text>
+      <text x="940" y="630">50</text>
+      <text x="1110" y="630">60</text>
+    </g>
+    <g text-anchor="end">
+      <text x="78" y="606">0.10</text>
+      <text x="78" y="544.8">0.12</text>
+      <text x="78" y="483.6">0.14</text>
+      <text x="78" y="422.5">0.16</text>
+      <text x="78" y="361.3">0.18</text>
+      <text x="78" y="300.1">0.20</text>
+      <text x="78" y="238.9">0.22</text>
+      <text x="78" y="177.8">0.24</text>
+      <text x="78" y="116.6">0.26</text>
+    </g>
+
+    <text x="600" y="674" text-anchor="middle" font-size="22" fill="#111111">VRAM saved vs vLLM (%)</text>
+    <text x="28" y="340" text-anchor="middle" font-size="22" fill="#111111" transform="rotate(-90 28 340)">CER</text>
+    <text x="940" y="92" font-size="18" fill="#555555">More VRAM saved</text>
+    <path d="M1090 86 l22 0 l-8 -7 m8 7 l-8 7" fill="none" stroke="#555555" stroke-width="2"/>
+    <text x="116" y="584" font-size="18" fill="#555555">Lower CER</text>
+    <path d="M102 564 l0 22 l-7 -8 m7 8 l7 -8" fill="none" stroke="#555555" stroke-width="2"/>
+  </g>
+
+  <g font-family="Arial, sans-serif" font-size="16">
+    <g fill="#666666" stroke="#444444" stroke-width="1">
+      <circle cx="212.4" cy="546.2" r="6"/>
+      <circle cx="948.5" cy="519.6" r="6"/>
+      <circle cx="989.3" cy="354.4" r="6"/>
+      <circle cx="771.7" cy="331.1" r="6"/>
+      <circle cx="1060.7" cy="316.4" r="6"/>
+      <circle cx="1025.0" cy="123.4" r="6"/>
+    </g>
+    <g fill="#111111">
+      <text x="188" y="526" text-anchor="middle">CT2 float16</text>
+      <text x="188" y="546" text-anchor="middle">(7.2%, 0.1176)</text>
+      <text x="938" y="499" text-anchor="middle">CT2 int8</text>
+      <text x="938" y="519" text-anchor="middle">(50.5%, 0.1263)</text>
+      <text x="960" y="334" text-anchor="middle">GGML q5_0</text>
+      <text x="960" y="354" text-anchor="middle">(52.9%, 0.1803)</text>
+      <text x="734" y="311" text-anchor="middle">GGML q8_0</text>
+      <text x="734" y="331" text-anchor="middle">(40.1%, 0.1879)</text>
+      <text x="1035" y="296" text-anchor="middle">GGML q4_0</text>
+      <text x="1035" y="316" text-anchor="middle">(57.1%, 0.1927)</text>
+      <text x="984" y="103" text-anchor="middle">GGML q4_1</text>
+      <text x="984" y="123" text-anchor="middle">(55.0%, 0.2558)</text>
+    </g>
+
+    <circle cx="945.1" cy="552.0" r="7" fill="#0b57d0" stroke="#073b8e" stroke-width="1.5"/>
+    <text x="760" y="548" fill="#0b57d0">CT2 int8_float16</text>
+    <text x="760" y="570" fill="#0b57d0">(50.3%, 0.1157)</text>
+    <path d="M930 551 l-34 0" fill="none" stroke="#0b57d0" stroke-width="2"/>
+    <path d="M930 551 l-10 -6 m10 6 l-10 6" fill="none" stroke="#0b57d0" stroke-width="2"/>
+    <text x="960" y="575" fill="#0b57d0">Best balance</text>
+  </g>
+</svg>
