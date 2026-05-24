@@ -10,6 +10,13 @@ from stt_eval.datasets import (
     download_dataset,
     prepare_dataset_samples,
 )
+from stt_eval.metrics import (
+    NORMALIZATION_MODES,
+    CompareResultsOptions,
+    compare_results,
+    render_json_report,
+    render_markdown_report,
+)
 from stt_eval.quantization import (
     ALL_ARTIFACT_DIRS,
     ALL_VARIANTS,
@@ -27,6 +34,7 @@ def main(argv: list[str] | None = None) -> None:
     _add_prepare_parser(subparsers)
     _add_download_dataset_parser(subparsers)
     _add_prepare_dataset_samples_parser(subparsers)
+    _add_compare_results_parser(subparsers)
     _add_validate_parser(subparsers)
     args = parser.parse_args(argv)
 
@@ -63,6 +71,36 @@ def main(argv: list[str] | None = None) -> None:
                 force=args.force,
             )
         )
+        return
+    if args.command == "compare-results":
+        candidate_paths = _resolve_candidate_paths(
+            results_dir=args.results_dir,
+            baseline_filename=args.baseline,
+            include=tuple(args.include or ()),
+        )
+        baseline_path = args.results_dir / args.baseline
+        comparisons = compare_results(
+            CompareResultsOptions(
+                baseline_path=baseline_path,
+                candidate_paths=candidate_paths,
+                normalization=args.normalization,
+            )
+        )
+        if args.format == "json":
+            output = render_json_report(
+                baseline_path,
+                comparisons,
+                normalization=args.normalization,
+            )
+        else:
+            output = render_markdown_report(
+                baseline_path,
+                comparisons,
+                normalization=args.normalization,
+            )
+        if args.output:
+            args.output.write_text(output, encoding="utf-8")
+        print(output, end="")
         return
     if args.command == "validate-artifacts":
         _validate(args.model_root)
@@ -121,9 +159,68 @@ def _add_prepare_dataset_samples_parser(
     parser.add_argument("--force", action="store_true")
 
 
+def _add_compare_results_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("compare-results")
+    parser.add_argument("--results-dir", type=Path, default=Path("results"))
+    parser.add_argument("--baseline", default="vllm-hf-float16.jsonl")
+    parser.add_argument(
+        "--include",
+        action="append",
+        help="只比較指定檔名，可重複指定。預設比較 results 目錄下除了 baseline 以外的所有 jsonl。",
+    )
+    parser.add_argument(
+        "--normalization",
+        choices=NORMALIZATION_MODES,
+        default="strip-whitespace",
+        help=(
+            "CER 前處理規則。"
+            "raw=不做正規化；strip-whitespace=移除所有空白；"
+            "breeze-compatible=移除空白、去標點、英文轉小寫。"
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("markdown", "json"),
+        default="markdown",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="可選，將報表另外寫到指定路徑。",
+    )
+
+
 def _add_validate_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("validate-artifacts")
     parser.add_argument("--model-root", type=Path, default=DEFAULT_MODEL_ROOT)
+
+
+def _resolve_candidate_paths(
+    *,
+    results_dir: Path,
+    baseline_filename: str,
+    include: tuple[str, ...],
+) -> tuple[Path, ...]:
+    baseline_path = results_dir / baseline_filename
+    if not baseline_path.exists():
+        raise RuntimeError(f"找不到 baseline 檔案：{baseline_path}")
+
+    if include:
+        candidate_paths = tuple(results_dir / filename for filename in include)
+    else:
+        candidate_paths = tuple(
+            path
+            for path in sorted(results_dir.glob("*.jsonl"))
+            if path.name != baseline_filename
+        )
+
+    missing_paths = [path for path in candidate_paths if not path.exists()]
+    if missing_paths:
+        missing_text = ", ".join(str(path) for path in missing_paths)
+        raise RuntimeError(f"找不到 results 檔案：{missing_text}")
+    if not candidate_paths:
+        raise RuntimeError("沒有可比較的 results 檔案")
+    return candidate_paths
 
 
 def _validate(model_root: Path) -> None:
